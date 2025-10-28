@@ -17,7 +17,7 @@ export default function HomePage() {
       {/* Running tagline */}
       <div className="mt-5 overflow-hidden">
         <div className="inline-block whitespace-nowrap text-blue-600/90 font-semibold text-base sm:text-lg animate-marquee">
-          Position right • Expose smart • Diagnose clearly • Treat effectively
+          Position right • Expose smart • Diagnose clearly
         </div>
       </div>
 
