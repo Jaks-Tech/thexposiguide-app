@@ -156,7 +156,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      /* IMAGE GALLERY */
+      {/* IMAGE GALLERY */}
       <section className="mt-14 sm:mt-16">
         <h2 className="text-xl sm:text-2xl font-semibold text-blue-600 mb-6">
           Glimpse into Practice
