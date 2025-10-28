@@ -7,7 +7,13 @@ type Props = {
   html: string; // full HTML string from your Markdown render
 };
 
+// ✅ SSR-safe: works on server (no document) and on client (uses DOM for accuracy)
 function stripHtmlToText(html: string) {
+  const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
+  if (!isBrowser) {
+    // server fallback: quick tag removal
+    return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  }
   const el = document.createElement("div");
   el.innerHTML = html;
   return el.textContent || el.innerText || "";
@@ -15,10 +21,7 @@ function stripHtmlToText(html: string) {
 
 // Split into chunks so each utterance stays under API limits and breathes naturally
 function chunkText(text: string, maxLen = 1200) {
-  const sentences = text
-    .replace(/\s+/g, " ")
-    .split(/(?<=[.!?])\s+/); // split by sentence boundaries
-
+  const sentences = text.replace(/\s+/g, " ").split(/(?<=[.!?])\s+/);
   const chunks: string[] = [];
   let current = "";
   for (const s of sentences) {
@@ -42,6 +45,7 @@ export default function ReadAloud({ title, html }: Props) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
+  // ✅ This will run on both server and client, but stripHtmlToText is safe now
   const text = useMemo(() => stripHtmlToText(html), [html]);
   const chunks = useMemo(() => chunkText(`${title}. ${text}`), [title, text]);
 
@@ -55,7 +59,6 @@ export default function ReadAloud({ title, html }: Props) {
     function loadVoices() {
       const v = window.speechSynthesis.getVoices();
       setVoices(v);
-      // try to pick an English-like default
       const i = v.findIndex(
         (vv) => /en-/i.test(vv.lang) || /English/i.test(vv.name)
       );
@@ -73,8 +76,21 @@ export default function ReadAloud({ title, html }: Props) {
 
   function clearQueue(stop = false) {
     queueRef.current = [];
-    if (stop) {
+    if (stop && typeof window !== "undefined") {
       window.speechSynthesis.cancel();
+    }
+  }
+
+  function onUtteranceEnd() {
+    const q = queueRef.current;
+    if (q.length === 0) {
+      setIsPlaying(false);
+      setIsPaused(false);
+      return;
+    }
+    const next = q.shift();
+    if (next && typeof window !== "undefined") {
+      window.speechSynthesis.speak(next);
     }
   }
 
@@ -94,23 +110,11 @@ export default function ReadAloud({ title, html }: Props) {
     queueRef.current = list;
   }
 
-  function onUtteranceEnd() {
-    // when one ends, speak next or finish
-    const q = queueRef.current;
-    if (q.length === 0) {
-      setIsPlaying(false);
-      setIsPaused(false);
-      return;
-    }
-    const next = q.shift();
-    if (next) window.speechSynthesis.speak(next);
-  }
-
   function handlePlay() {
     if (!supported || chunks.length === 0) return;
 
     // resume if paused
-    if (isPaused) {
+    if (isPaused && typeof window !== "undefined") {
       window.speechSynthesis.resume();
       setIsPaused(false);
       setIsPlaying(true);
@@ -121,13 +125,14 @@ export default function ReadAloud({ title, html }: Props) {
     buildQueue();
     setIsPlaying(true);
     setIsPaused(false);
-    // kick off first item
     const first = queueRef.current.shift();
-    if (first) window.speechSynthesis.speak(first);
+    if (first && typeof window !== "undefined") {
+      window.speechSynthesis.speak(first);
+    }
   }
 
   function handlePause() {
-    if (!supported) return;
+    if (!supported || typeof window === "undefined") return;
     window.speechSynthesis.pause();
     setIsPaused(true);
     setIsPlaying(false);
@@ -140,34 +145,31 @@ export default function ReadAloud({ title, html }: Props) {
     setIsPaused(false);
   }
 
-  // If user changes rate/pitch/voice mid-play, rebuild
+  // If user changes rate/pitch/voice mid-play, rebuild remaining queue with new settings
   useEffect(() => {
-    if (isPlaying) {
-      // rebuild queue with new settings for remaining text
-      const remainingText = queueRef.current
-        .map((u) => u.text)
-        .join(" ");
-      const leftovers = remainingText ? chunkText(leftoverTextSanitize(remainingText)) : [];
-      clearQueue(true);
-      const voice = voiceIndex >= 0 ? voices[voiceIndex] : undefined;
-      queueRef.current = leftovers.map((c) => {
-        const ut = new SpeechSynthesisUtterance(c);
-        if (voice) ut.voice = voice;
-        ut.rate = rate;
-        ut.pitch = pitch;
-        ut.onend = onUtteranceEnd;
-        ut.onerror = onUtteranceEnd;
-        return ut;
-      });
-      const next = queueRef.current.shift();
-      if (next) window.speechSynthesis.speak(next);
+    if (!isPlaying) return;
+    // rebuild queue with new settings for remaining text
+    const remainingText = queueRef.current.map((u) => u.text).join(" ");
+    const leftovers = remainingText
+      ? chunkText(remainingText.replace(/\s+/g, " ").trim())
+      : [];
+    clearQueue(true);
+    const voice = voiceIndex >= 0 ? voices[voiceIndex] : undefined;
+    queueRef.current = leftovers.map((c) => {
+      const ut = new SpeechSynthesisUtterance(c);
+      if (voice) ut.voice = voice;
+      ut.rate = rate;
+      ut.pitch = pitch;
+      ut.onend = onUtteranceEnd;
+      ut.onerror = onUtteranceEnd;
+      return ut;
+    });
+    const next = queueRef.current.shift();
+    if (next && typeof window !== "undefined") {
+      window.speechSynthesis.speak(next);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rate, pitch, voiceIndex]);
-
-  function leftoverTextSanitize(t: string) {
-    return t.replace(/\s+/g, " ").trim();
-  }
 
   if (!supported) {
     return (
