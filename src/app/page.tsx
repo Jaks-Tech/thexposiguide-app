@@ -194,15 +194,11 @@ export default function HomePage() {
               title: "X-Ray Equipment Setup",
               desc: "Depicts alignment between tube, detector, and patient for optimal beam geometry.",
             },
-            {
-              name: "pa-view",
-              title: "PA Chest View",
-              desc: "Posterior–anterior projection technique for chest radiography, reducing heart magnification.",
-            },
+
             {
               name: "chest-x-ray-pa",
               title: "Chest X-Ray — PA",
-              desc: "Final radiograph example obtained from a correctly performed PA chest projection.",
+              desc: "Posterior–anterior projection technique for chest radiography, reducing heart magnification."
             },
           ].map((img) => (
             <div
