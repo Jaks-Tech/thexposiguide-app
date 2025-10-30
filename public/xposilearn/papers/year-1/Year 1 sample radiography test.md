@@ -1,36 +1,36 @@
 ---
-title: Positioning Practice Test 1
-slug: positioning-practice
-description: Year 1 sample radiography test
-image: positioning-practice.jpg
+title: Medical Physics Practice Test 1
+slug: medical-physics-practice
+description: Year 1 sample medical physics test
+image: medical-physics-practice.jpg
 ---
 
 ## Question 1
-Describe the patient positioning for an AP wrist projection.
+Define half-value layer (HVL) and explain its significance in radiation protection.
 
 ## Question 2
-State the central ray direction and angle for a lateral knee.
+Describe the process of X-ray production in an X-ray tube.
 
 ## Question 3
-List the anatomical structures demonstrated in a PA chest projection.
+Explain the relationship between kilovoltage peak (kVp) and image contrast.
 
 ## Question 4
-Explain the correct positioning for a lateral ankle projection.
+State the inverse square law and provide a practical example of its application in radiography.
 
 ## Question 5
-Describe how to evaluate image quality for an AP pelvis projection.
+Differentiate between bremsstrahlung and characteristic radiation.
 
 ## Question 6
-State the recommended source-to-image distance (SID) for a lateral cervical spine.
+Describe how filtration affects the quality and quantity of an X-ray beam.
 
 ## Question 7
-Outline the patient preparation steps before performing an abdominal X-ray.
+Explain what happens to patient dose when exposure time is doubled but mA is halved.
 
 ## Question 8
-Identify two common positioning errors in a lateral skull projection.
+Define linear attenuation coefficient and explain how it varies with photon energy.
 
 ## Question 9
-Explain how to minimize patient rotation in a PA hand projection.
+List the main components of a diagnostic X-ray imaging system and state their functions.
 
 ## Question 10
-Describe the correct central ray placement for an AP shoulder projection.
+Discuss the factors affecting image sharpness in radiographic imaging.
