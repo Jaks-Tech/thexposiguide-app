@@ -1,8 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-type Subdir = "upper" | "lower" | "pelvic";
-
+type Subdir = "upper" | "lower" | "pelvic" | "resources"; // ✅ include "resources"
 function existsPublic(relPath: string) {
   const abs = path.join(process.cwd(), "public", relPath);
   return fs.existsSync(abs);

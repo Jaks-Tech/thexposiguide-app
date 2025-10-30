@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import GalleryImage from "@/components/GalleryImage";
+
 export default function HomePage() {
   return (
     <main className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-12 text-center">
@@ -42,8 +43,8 @@ export default function HomePage() {
           Explore Modules
         </h2>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Upper */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Upper Extremities */}
           <Link
             href="/upper-extremities"
             className="group overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition hover:shadow-md text-left"
@@ -54,7 +55,7 @@ export default function HomePage() {
                 alt="Upper Extremities"
                 fill
                 className="object-contain p-6"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                 priority
               />
             </div>
@@ -69,7 +70,7 @@ export default function HomePage() {
             </div>
           </Link>
 
-          {/* Lower */}
+          {/* Lower Extremities */}
           <Link
             href="/lower-extremities"
             className="group overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition hover:shadow-md text-left"
@@ -80,7 +81,7 @@ export default function HomePage() {
                 alt="Lower Extremities"
                 fill
                 className="object-contain p-6"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
               />
             </div>
             <div className="p-4">
@@ -94,7 +95,7 @@ export default function HomePage() {
             </div>
           </Link>
 
-          {/* Pelvic */}
+          {/* Pelvic Girdle */}
           <Link
             href="/pelvic-girdle"
             className="group overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition hover:shadow-md text-left"
@@ -105,7 +106,7 @@ export default function HomePage() {
                 alt="Pelvic Girdle"
                 fill
                 className="object-contain p-6"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
               />
             </div>
             <div className="p-4">
@@ -118,6 +119,54 @@ export default function HomePage() {
               </p>
             </div>
           </Link>
+
+          {/* XPosiLearn */}
+          <Link
+            href="/xposilearn"
+            className="group overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition hover:shadow-md text-left"
+          >
+            <div className="relative w-full aspect-[4/3]">
+              <Image
+                src="/assets/xposilearn.png" // Add this thumbnail in /public/assets/
+                alt="XPosiLearn"
+                fill
+                className="object-contain p-6"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              />
+            </div>
+            <div className="p-4">
+              <h3 className="text-base sm:text-lg font-bold text-blue-700">
+                XPosiLearn
+              </h3>
+              <p className="text-sm text-neutral-600 mt-1 line-clamp-2">
+                Study & revision hub with Notes, Past Papers, and reference materials for all levels.
+              </p>
+            </div>
+          </Link>
+          {/* XPosi AI */}
+          <Link
+            href="/xposi-ai"
+            className="group overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition hover:shadow-md text-left"
+          >
+            <div className="relative w-full aspect-[4/3]">
+              <Image
+                src="/assets/xposi-ai.png" // 📸 you’ll add this image next
+                alt="XPosi AI"
+                fill
+                className="object-contain p-6"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              />
+            </div>
+            <div className="p-4">
+              <h3 className="text-base sm:text-lg font-bold text-blue-700">
+                XPosi AI
+              </h3>
+              <p className="text-sm text-neutral-600 mt-1 line-clamp-2">
+                Intelligent radiography assistant that reads and explains past papers.
+              </p>
+            </div>
+          </Link>
+
         </div>
       </section>
 
@@ -194,11 +243,10 @@ export default function HomePage() {
               title: "X-Ray Equipment Setup",
               desc: "Depicts alignment between tube, detector, and patient for optimal beam geometry.",
             },
-
             {
               name: "chest-x-ray-pa",
               title: "Chest X-Ray — PA",
-              desc: "Posterior–anterior projection technique for chest radiography, reducing heart magnification."
+              desc: "Posterior–anterior projection technique for chest radiography, reducing heart magnification.",
             },
           ].map((img) => (
             <div

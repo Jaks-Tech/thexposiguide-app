@@ -8,27 +8,22 @@ export type EntryMeta = {
   title: string;
   slug: string;
   description: string;
-  image?: string;     // filename (e.g. hand-pa.jpg) OR absolute path (/illustrations/upper/hand-pa.jpg)
+  image?: string;
   region?: string;
   projection?: string;
 };
 
 const root = process.cwd();
 
-/**
- * Map each module key to the repo folders that hold Markdown.
- * You will drop .md files into these folders:
- * - /upper-extremities-content
- * - /lower-extremities-content
- * - /pelvic-girdle-content
- */
+// ✅ Tell your app where to find each module's Markdown files
 const CONTENT_DIRS = {
   upper: "upper-extremities-content",
   lower: "lower-extremities-content",
   pelvic: "pelvic-girdle-content",
+  resources: "public/xposilearn/papers", // ✅ now points to your actual past paper folder
 } as const;
 
-export type ModuleKey = keyof typeof CONTENT_DIRS; // "upper" | "lower" | "pelvic"
+export type ModuleKey = keyof typeof CONTENT_DIRS;
 
 function contentDir(subdir: ModuleKey) {
   return path.join(root, CONTENT_DIRS[subdir]);
@@ -36,25 +31,17 @@ function contentDir(subdir: ModuleKey) {
 
 function readDirMarkdownFiles(dir: string): string[] {
   if (!fs.existsSync(dir)) return [];
-  // Case-insensitive .md
   return fs
-    .readdirSync(dir)
-    .filter((f) => f.toLowerCase().endsWith(".md"))
-    .map((f) => path.join(dir, f));
+    .readdirSync(dir, { withFileTypes: true })
+    .flatMap((entry) => {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        return readDirMarkdownFiles(fullPath);
+      }
+      return entry.name.toLowerCase().endsWith(".md") ? [fullPath] : [];
+    });
 }
 
-function deriveSlug(filePath: string, dataSlug: unknown): string {
-  if (typeof dataSlug === "string" && dataSlug.trim().length > 0) {
-    return dataSlug.trim();
-  }
-  const base = path.basename(filePath);
-  return base.replace(/\.md$/i, "");
-}
-
-/**
- * Return all entries (frontmatter only) from a module’s folder.
- * Slug preference: frontmatter.slug -> filename (minus .md)
- */
 export async function listEntries(subdir: ModuleKey): Promise<EntryMeta[]> {
   const dir = contentDir(subdir);
   const files = readDirMarkdownFiles(dir);
@@ -62,89 +49,41 @@ export async function listEntries(subdir: ModuleKey): Promise<EntryMeta[]> {
   return files.map((absPath) => {
     const raw = fs.readFileSync(absPath, "utf8");
     const { data } = matter(raw);
-    const slug = deriveSlug(absPath, data.slug);
-
+    const slug = data.slug ?? path.basename(absPath).replace(/\.md$/, "");
     return {
-      title: (data.title ?? "").toString(),
+      title: data.title ?? "",
       slug,
-      description: (data.description ?? "").toString(),
-      image: data.image ? data.image.toString() : "",
-      region: data.region ? data.region.toString() : "",
-      projection: data.projection ? data.projection.toString() : "",
+      description: data.description ?? "",
+      image: data.image ?? "",
+      region: data.region ?? "",
+      projection: data.projection ?? "",
     } as EntryMeta;
   });
 }
 
-/**
- * Load one entry by slug, convert Markdown → HTML, and return meta + html.
- * 1) tries <slug>.md
- * 2) scans files for matching frontmatter.slug
- */
-export async function loadEntry(
-  subdir: ModuleKey,
-  slugRaw: string
-): Promise<{ meta: EntryMeta; html: string }> {
+export async function loadEntry(subdir: ModuleKey, slug: string) {
   const dir = contentDir(subdir);
-  const slug = slugRaw.trim();
-
-  // 1) Direct file match: <slug>.md
-  const directFile = path.join(dir, `${slug}.md`);
-  if (fs.existsSync(directFile)) {
-    const raw = fs.readFileSync(directFile, "utf8");
-    const { data, content } = matter(raw);
-    const processed = await remark().use(html).process(content);
-    const htmlStr = processed.toString();
-
-    const meta: EntryMeta = {
-      title: (data.title ?? "").toString(),
-      slug: deriveSlug(directFile, data.slug), // ensure canonical
-      description: (data.description ?? "").toString(),
-      image: data.image ? data.image.toString() : "",
-      region: data.region ? data.region.toString() : "",
-      projection: data.projection ? data.projection.toString() : "",
-    };
-
-    return { meta, html: htmlStr };
-  }
-
-  // 2) Fallback: iterate files to find matching frontmatter.slug
   const files = readDirMarkdownFiles(dir);
-  for (const abs of files) {
-    const raw = fs.readFileSync(abs, "utf8");
-    const parsed = matter(raw);
-    const fmSlug = deriveSlug(abs, parsed.data.slug);
 
+  for (const filePath of files) {
+    const raw = fs.readFileSync(filePath, "utf8");
+    const parsed = matter(raw);
+    const fmSlug = parsed.data.slug ?? path.basename(filePath).replace(/\.md$/, "");
     if (fmSlug === slug) {
       const processed = await remark().use(html).process(parsed.content);
-      const htmlStr = processed.toString();
-
-      const meta: EntryMeta = {
-        title: (parsed.data.title ?? "").toString(),
-        slug: fmSlug,
-        description: (parsed.data.description ?? "").toString(),
-        image: parsed.data.image ? parsed.data.image.toString() : "",
-        region: parsed.data.region ? parsed.data.region.toString() : "",
-        projection: parsed.data.projection ? parsed.data.projection.toString() : "",
+      return {
+        meta: {
+          title: parsed.data.title ?? "",
+          slug: fmSlug,
+          description: parsed.data.description ?? "",
+          image: parsed.data.image ?? "",
+          region: parsed.data.region ?? "",
+          projection: parsed.data.projection ?? "",
+        } as EntryMeta,
+        html: processed.toString(),
       };
-
-      return { meta, html: htmlStr };
     }
   }
 
-  // Helpful dev log
-  console.warn(
-    `[md] No match for slug="${slug}" in ${dir}. Files seen: ${files
-      .map((p) => path.basename(p))
-      .join(", ")}`
-  );
-  throw new Error("Not found");
-}
-
-/**
- * List slugs for static generation or other needs.
- * Uses frontmatter.slug when present; otherwise filename.
- */
-export async function listSlugs(subdir: ModuleKey): Promise<string[]> {
-  const entries = await listEntries(subdir);
-  return entries.map((e) => e.slug);
+  throw new Error(`Markdown not found for slug: ${slug}`);
 }
