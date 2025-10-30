@@ -33,3 +33,50 @@ body {
 .prose h2 { font-size: 1.5rem; border-bottom: 2px solid #3b82f6; padding-bottom: .3rem; margin-bottom: .6rem; }
 .prose h3 { font-size: 1.25rem; }
 .dark .prose h1, .dark .prose h2, .dark .prose h3 { color: #60a5fa; }
+.prose {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.prose h3 {
+  color: #1d4ed8; /* Tailwind blue-700 */
+  font-weight: 700;
+}
+
+.prose strong {
+  color: #111827;
+}
+
+.prose ul {
+  list-style-type: disc;
+  margin-left: 1.2rem;
+}
+.prose {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #1f2937;
+}
+
+.prose h2, .prose h3 {
+  color: #1d4ed8;
+  font-weight: 700;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.2rem;
+}
+
+.prose p {
+  margin-bottom: 1rem;
+}
+
+.prose ul {
+  list-style: disc;
+  margin-left: 1.5rem;
+}
+
+.prose li {
+  margin-bottom: 0.3rem;
+}
+
+button {
+  transition: all 0.25s ease;
+}

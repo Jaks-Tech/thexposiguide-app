@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export default function AIAnswerBox({ content }: { content: string }) {
   const [answer, setAnswer] = useState("");
@@ -11,26 +13,36 @@ export default function AIAnswerBox({ content }: { content: string }) {
     const res = await fetch("/api/ask-ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ context: content, question: "Explain or answer this." }),
+      body: JSON.stringify({ prompt: content }),
     });
     const data = await res.json();
     setAnswer(data.answer || "No response available.");
     setLoading(false);
   };
 
+  // 🧠 Clean Markdown for speech output
+  const stripMarkdown = (text: string) => {
+    return text
+      .replace(/[#_*~`>]/g, "")
+      .replace(/\[(.*?)\]\(.*?\)/g, "$1")
+      .replace(/\n{2,}/g, ". ")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
   const handleReadAnswer = () => {
     if (!answer) return;
 
-    // Stop if currently speaking
     if (speaking) {
       window.speechSynthesis.cancel();
       setSpeaking(false);
       return;
     }
 
-    const utterance = new SpeechSynthesisUtterance(answer);
-    utterance.rate = 1; // normal speed
-    utterance.pitch = 1; // natural tone
+    const cleanText = stripMarkdown(answer);
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.rate = 1;
+    utterance.pitch = 1;
     utterance.lang = "en-US";
 
     utterance.onend = () => setSpeaking(false);
@@ -56,14 +68,19 @@ export default function AIAnswerBox({ content }: { content: string }) {
       </button>
 
       {answer && (
-        <div className="mt-5 p-4 bg-white border rounded-md text-sm text-neutral-800">
-          <p className="whitespace-pre-wrap">{answer}</p>
+        <div className="mt-4 p-5 bg-white border rounded-md text-neutral-800">
+          {/* ✅ Wrapping div for styling */}
+          <div className="prose prose-blue max-w-none">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {answer}
+            </ReactMarkdown>
+          </div>
 
-          {/* Voice-over controls */}
-          <div className="mt-4 flex items-center gap-3">
+          {/* 🎧 Voice controls */}
+          <div className="mt-5">
             <button
               onClick={handleReadAnswer}
-              className={`px-3 py-2 rounded-md text-sm font-medium ${
+              className={`px-4 py-2 rounded-md text-sm font-medium ${
                 speaking
                   ? "bg-red-600 hover:bg-red-700 text-white"
                   : "bg-green-600 hover:bg-green-700 text-white"
