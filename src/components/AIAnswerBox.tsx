@@ -4,17 +4,40 @@ import { useState } from "react";
 export default function AIAnswerBox({ content }: { content: string }) {
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
 
   const handleAskAI = async () => {
     setLoading(true);
     const res = await fetch("/api/ask-ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: content }),
+      body: JSON.stringify({ context: content, question: "Explain or answer this." }),
     });
     const data = await res.json();
-    setAnswer(data.answer);
+    setAnswer(data.answer || "No response available.");
     setLoading(false);
+  };
+
+  const handleReadAnswer = () => {
+    if (!answer) return;
+
+    // Stop if currently speaking
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(answer);
+    utterance.rate = 1; // normal speed
+    utterance.pitch = 1; // natural tone
+    utterance.lang = "en-US";
+
+    utterance.onend = () => setSpeaking(false);
+    utterance.onerror = () => setSpeaking(false);
+
+    setSpeaking(true);
+    window.speechSynthesis.speak(utterance);
   };
 
   return (
@@ -23,6 +46,7 @@ export default function AIAnswerBox({ content }: { content: string }) {
       <p className="text-sm text-neutral-700 mb-3">
         Click below to generate AI-based guidance or answers for this paper.
       </p>
+
       <button
         onClick={handleAskAI}
         disabled={loading}
@@ -32,8 +56,22 @@ export default function AIAnswerBox({ content }: { content: string }) {
       </button>
 
       {answer && (
-        <div className="mt-4 p-3 bg-white border rounded-md text-sm text-neutral-800 whitespace-pre-wrap">
-          {answer}
+        <div className="mt-5 p-4 bg-white border rounded-md text-sm text-neutral-800">
+          <p className="whitespace-pre-wrap">{answer}</p>
+
+          {/* Voice-over controls */}
+          <div className="mt-4 flex items-center gap-3">
+            <button
+              onClick={handleReadAnswer}
+              className={`px-3 py-2 rounded-md text-sm font-medium ${
+                speaking
+                  ? "bg-red-600 hover:bg-red-700 text-white"
+                  : "bg-green-600 hover:bg-green-700 text-white"
+              }`}
+            >
+              {speaking ? "⏹ Stop Reading" : "🔊 Read Answer"}
+            </button>
+          </div>
         </div>
       )}
     </div>
