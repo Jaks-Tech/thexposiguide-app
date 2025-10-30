@@ -269,34 +269,37 @@ export default function HomePage() {
           ))}
         </div>
       </section>
-          {/* ✉️ Newsletter Section */}
-          <section className="relative mt-20 mb-16 px-4 animate-fadeInUp">
-            <div className="relative max-w-3xl mx-auto overflow-hidden rounded-3xl shadow-lg bg-gradient-to-br from-blue-700 via-blue-600 to-blue-500 text-white p-10 sm:p-14 transition-transform hover:scale-[1.01]">
-              {/* Decorative overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent backdrop-blur-sm" />
-          
-              <div className="relative z-10 text-center">
-                <h2 className="text-2xl sm:text-3xl font-extrabold mb-3 tracking-tight">
-                  Subscribe to <span className="text-white/90">The XPosiGuide</span> Newsletter
-                </h2>
-                <p className="text-white/80 text-sm sm:text-base mb-6 max-w-xl mx-auto">
-                  Join our growing community of radiography learners!  
-                  Get updates on new modules, study resources, and AI-powered learning tools delivered to your inbox.
-                </p>
-          
-                {/* ✅ MailerLite Embed */}
-                <div className="ml-embedded" data-form="R6RPfh"></div>
-          
-                {/* 🎉 Success message (hidden by default) */}
-                <div
-                  id="successMessage"
-                  className="hidden mt-6 bg-white/10 text-white rounded-lg px-4 py-3 text-sm sm:text-base font-medium shadow-md backdrop-blur-md"
-                >
-                  🎉 Thanks for joining <span className="font-semibold">The XPosiGuide</span> community!
-                </div>
+        {/* ✉️ Newsletter Section */}
+        <section className="relative mt-16 mb-14 px-4 animate-fadeInUp">
+          <div className="relative max-w-2xl sm:max-w-3xl mx-auto overflow-hidden rounded-3xl shadow-lg bg-gradient-to-br from-blue-700 via-blue-600 to-blue-500 text-white p-8 sm:p-10 transition-transform hover:scale-[1.01]">
+            {/* Decorative overlay */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent backdrop-blur-sm" />
+        
+            <div className="relative z-10 text-center">
+              <h2 className="text-xl sm:text-2xl font-extrabold mb-2 tracking-tight">
+                Subscribe to <span className="text-white/90">The XPosiGuide</span> Newsletter
+              </h2>
+              <p className="text-white/80 text-sm sm:text-base mb-6 max-w-md mx-auto">
+                Join our growing community of radiography learners! Get updates on new
+                modules, study resources, and AI-powered learning tools delivered to your inbox.
+              </p>
+        
+              {/* ✅ Smaller MailerLite Embed */}
+              <div
+                className="ml-embedded mx-auto bg-white rounded-2xl p-4 sm:p-6 max-w-md"
+                data-form="R6RPfh"
+              ></div>
+        
+              {/* 🎉 Success message */}
+              <div
+                id="successMessage"
+                className="hidden mt-5 bg-white/10 text-white rounded-lg px-4 py-2 text-sm sm:text-base font-medium shadow-md backdrop-blur-md"
+              >
+                🎉 Thanks for joining <span className="font-semibold">The XPosiGuide</span> community!
               </div>
             </div>
-          </section>
+          </div>
+        </section>
 
       {/* FOOTER DISCLAIMER */}
       <footer className="mt-14 border-t border-neutral-200 pt-6 pb-8 text-sm text-neutral-500 text-center px-4">
