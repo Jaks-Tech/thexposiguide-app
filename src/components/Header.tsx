@@ -7,10 +7,13 @@ import { useEffect, useState } from "react";
 
 export default function Header() {
   const pathname = usePathname();
+  const [isMounted, setIsMounted] = useState(false);
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  // ✅ Prevent hydration mismatch by deferring client-only rendering
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const navLinks = [
     { name: "Home", href: "/" },
@@ -18,7 +21,7 @@ export default function Header() {
     { name: "Lower Extremities", href: "/lower-extremities" },
     { name: "Pelvic Girdle", href: "/pelvic-girdle" },
     { name: "XPosiLearn", href: "/xposilearn" },
-    { name: "XPosi AI", href: "/xposi-ai" }, // ✅ Added comma and correct link
+    { name: "XPosi AI", href: "/xposi-ai" },
   ];
 
   return (
@@ -26,26 +29,35 @@ export default function Header() {
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 py-3">
         {/* Logo + Site Name */}
         <Link href="/" className="flex items-center gap-3">
-          <Image
-            src="/assets/logo.png"
-            alt="The XPosiGuide logo"
-            width={36}
-            height={36}
-            className="rounded-full shadow-sm"
-            priority
-          />
+          {/* ✅ Use plain <img> until hydration to prevent SSR mismatch */}
+          {isMounted ? (
+            <Image
+              src="/assets/logo.png"
+              alt="The XPosiGuide logo"
+              width={36}
+              height={36}
+              priority
+              className="rounded-full shadow-sm"
+            />
+          ) : (
+            <img
+              src="/assets/logo.png"
+              alt="The XPosiGuide logo"
+              width={36}
+              height={36}
+              className="rounded-full shadow-sm"
+              style={{ color: "transparent" }}
+            />
+          )}
           <span className="text-lg sm:text-xl font-bold tracking-wide">
             The XPosiGuide
           </span>
         </Link>
 
-        {/* Desktop Links */}
-        <ul
-          className="hidden md:flex flex-wrap gap-3"
-          key={pathname} // re-render active link
-        >
+        {/* Desktop Navigation */}
+        <ul className="hidden md:flex flex-wrap gap-3" key={pathname}>
           {navLinks.map((link) => {
-            const isActive = mounted && pathname === link.href;
+            const isActive = pathname === link.href;
             return (
               <li key={link.href}>
                 <Link
@@ -64,7 +76,7 @@ export default function Header() {
           })}
         </ul>
 
-        {/* Mobile Toggle */}
+        {/* Mobile Menu Button */}
         <button
           className="md:hidden inline-flex items-center justify-center rounded-full border border-white/30 px-3 py-2 hover:bg-white/10"
           onClick={() => setOpen((v) => !v)}
@@ -96,7 +108,7 @@ export default function Header() {
             key={pathname}
           >
             {navLinks.map((link) => {
-              const isActive = mounted && pathname === link.href;
+              const isActive = pathname === link.href;
               return (
                 <li key={link.href}>
                   <Link

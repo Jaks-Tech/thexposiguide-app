@@ -15,12 +15,15 @@ export type EntryMeta = {
 
 const root = process.cwd();
 
-// ✅ Tell your app where to find each module's Markdown files
+/**
+ * ✅ Updated: Tell the app where each module’s Markdown files now live.
+ * Moved to the new structure under public/xposilearn/modules/
+ */
 const CONTENT_DIRS = {
-  upper: "upper-extremities-content",
-  lower: "lower-extremities-content",
-  pelvic: "pelvic-girdle-content",
-  resources: "public/xposilearn/papers", // ✅ now points to your actual past paper folder
+  upper: "public/xposilearn/modules/upper",
+  lower: "public/xposilearn/modules/lower",
+  pelvic: "public/xposilearn/modules/pelvic",
+  resources: "public/xposilearn/papers", // for past papers
 } as const;
 
 export type ModuleKey = keyof typeof CONTENT_DIRS;
@@ -29,6 +32,7 @@ function contentDir(subdir: ModuleKey) {
   return path.join(root, CONTENT_DIRS[subdir]);
 }
 
+/** Recursively read all .md files from a directory */
 function readDirMarkdownFiles(dir: string): string[] {
   if (!fs.existsSync(dir)) return [];
   return fs
@@ -42,6 +46,7 @@ function readDirMarkdownFiles(dir: string): string[] {
     });
 }
 
+/** 🧩 List all markdown entries for a given module */
 export async function listEntries(subdir: ModuleKey): Promise<EntryMeta[]> {
   const dir = contentDir(subdir);
   const files = readDirMarkdownFiles(dir);
@@ -51,7 +56,7 @@ export async function listEntries(subdir: ModuleKey): Promise<EntryMeta[]> {
     const { data } = matter(raw);
     const slug = data.slug ?? path.basename(absPath).replace(/\.md$/, "");
     return {
-      title: data.title ?? "",
+      title: data.title ?? slug,
       slug,
       description: data.description ?? "",
       image: data.image ?? "",
@@ -61,6 +66,7 @@ export async function listEntries(subdir: ModuleKey): Promise<EntryMeta[]> {
   });
 }
 
+/** 🧠 Load a single markdown entry by slug */
 export async function loadEntry(subdir: ModuleKey, slug: string) {
   const dir = contentDir(subdir);
   const files = readDirMarkdownFiles(dir);
@@ -69,6 +75,7 @@ export async function loadEntry(subdir: ModuleKey, slug: string) {
     const raw = fs.readFileSync(filePath, "utf8");
     const parsed = matter(raw);
     const fmSlug = parsed.data.slug ?? path.basename(filePath).replace(/\.md$/, "");
+
     if (fmSlug === slug) {
       const processed = await remark().use(html).process(parsed.content);
       return {
