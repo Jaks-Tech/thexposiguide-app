@@ -125,27 +125,13 @@ export default function UploadPage() {
 
   return (
     <main className="relative max-w-4xl mx-auto py-12 px-6 bg-white shadow-lg rounded-xl space-y-10">
-      {/* 🔐 Logout button */}
-        <button
-          onClick={() => {
-            if (confirm("Are you sure you want to logout?")) {
-              localStorage.removeItem("admin-auth");
-              router.push("/admin/login");
-            }
-          }}
-          className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-200 hover:shadow-lg"
-        >
-          ➡️ Logout
-        </button>
-
-
       <h1 className="text-3xl font-bold text-blue-700 text-center mb-6">
         🛠 The XPosiGuide Admin
       </h1>
 
       {/* === Upload Section === */}
       <section className="border border-neutral-200 p-6 rounded-xl">
-        <h2 className="text-xl font-semibold text-blue-700 mb-4">
+        <h2 className="text-xl font-semibold text-blue-700 mb-4 text-center border-b border-blue-100 pb-2">
           📚 Upload Notes, Past Papers, or Module Markdown
         </h2>
 
@@ -255,7 +241,7 @@ export default function UploadPage() {
 
       {/* 🌐 Add Useful Link */}
       <section className="border border-neutral-200 p-6 rounded-xl">
-        <h2 className="text-xl font-semibold text-blue-700 mb-4">
+        <h2 className="text-xl font-semibold text-blue-700 mb-4 text-center border-b border-blue-100 pb-2">
           🌐 Add Useful Link
         </h2>
         <form onSubmit={handleLinkSubmit} className="space-y-4">
@@ -295,7 +281,7 @@ export default function UploadPage() {
 
       {/* 🗑️ Delete Useful Link */}
       <section className="border border-neutral-200 p-6 rounded-xl">
-        <h2 className="text-xl font-semibold text-red-600 mb-4">
+        <h2 className="text-xl font-semibold text-red-600 mb-4 text-center border-b border-red-100 pb-2">
           🗑️ Delete Useful Link
         </h2>
         <form
@@ -348,7 +334,7 @@ export default function UploadPage() {
 
       {/* 🗑️ Delete File Section */}
       <section className="border border-neutral-200 p-6 rounded-xl">
-        <h2 className="text-xl font-semibold text-red-600 mb-4">
+        <h2 className="text-xl font-semibold text-red-600 mb-4 text-center border-b border-red-100 pb-2">
           🗑️ Delete Uploaded File
         </h2>
 
@@ -506,12 +492,42 @@ export default function UploadPage() {
           </button>
         </form>
       </section>
-      
+
       {status && (
         <p className="text-center text-blue-700 font-medium animate-pulse">
           {status}
         </p>
       )}
+
+      {/* 🔐 Logout Button (moved to bottom) */}
+        <div className="flex justify-center pt-8">
+          <button
+            onClick={() => {
+              if (confirm("Are you sure you want to logout?")) {
+                localStorage.removeItem("admin-auth");
+                router.push("/admin/login");
+              }
+            }}
+            className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold py-2.5 px-6 rounded-full shadow-md hover:shadow-xl hover:scale-105 transition-all duration-200"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-7.5A2.25 2.25 0 003.75 5.25v13.5A2.25 2.25 0 006 21h7.5a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"
+              />
+            </svg>
+            <span>Logout</span>
+          </button>
+        </div>
+
     </main>
   );
 }

@@ -80,3 +80,28 @@ body {
 button {
   transition: all 0.25s ease;
 }
+@keyframes sparkle {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+/* Running text marquee animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-marquee {
+  display: inline-block;
+  min-width: 100%;
+  animation: marquee 50s linear infinite;
+}
+
+

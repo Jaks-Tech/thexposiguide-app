@@ -1,10 +1,10 @@
 // src/app/layout.tsx
-import type { Metadata } from "next";
 import "./globals.css";
 import "@/styles/theme.css";
+import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import Script from "next/script"; // ✅ import for MailerLite scripts
+import Script from "next/script";
 
 export const metadata: Metadata = {
   title: "The XPosiGuide",
@@ -19,9 +19,31 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        {/* ✅ MailerLite Universal Script */}
-        <Script id="mailerlite-universal" strategy="beforeInteractive">
+      <head></head>
+
+      <body
+        suppressHydrationWarning
+        className="min-h-screen bg-white text-neutral-900 flex flex-col"
+      >
+        {/* ✅ Header */}
+        <Header />
+
+        {/* ✅ Running text marquee bar */}
+        <div className="overflow-hidden bg-gradient-to-r from-blue-700 via-blue-600 to-blue-800 text-white py-2 shadow-md">
+          <div className="whitespace-nowrap animate-marquee font-medium text-sm sm:text-base tracking-wide">
+            ⚡ Welcome to <strong>The XPosiGuide</strong> | Learn,
+            Revise, and Perfect Your Radiography Skills with AI-Powered Guidance and Real-World X-ray Positioning Practice!
+          </div>
+        </div>
+
+        {/* ✅ Main content */}
+        <main className="flex-grow w-full">{children}</main>
+
+        {/* ✅ Footer */}
+        <Footer />
+
+        {/* ✅ MailerLite scripts */}
+        <Script id="mailerlite-universal" strategy="afterInteractive">
           {`
             (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[]).push(arguments);};
             l=d.createElement(e),l.async=1,l.src=u;
@@ -30,17 +52,7 @@ export default function RootLayout({
             ml('account', '1888147');
           `}
         </Script>
-      </head>
 
-      <body
-        suppressHydrationWarning
-        className="min-h-screen bg-white text-neutral-900 flex flex-col"
-      >
-        <Header />
-        <main className="flex-grow w-full">{children}</main>
-        <Footer />
-
-        {/* ✅ MailerLite success message handler */}
         <Script id="mailerlite-success" strategy="afterInteractive">
           {`
             document.addEventListener("ml_webform_success", function() {
