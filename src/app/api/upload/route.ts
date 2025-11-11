@@ -113,6 +113,7 @@ export async function POST(req: Request) {
         file_url: fileUrl,
         image_url: imageUrl,
         path: fullPath,
+        slug,
       },
     ]);
 
