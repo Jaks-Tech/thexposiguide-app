@@ -20,12 +20,12 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     .ilike("filename", `%${slug}%`)
     .single();
 
-  if (error || !entry)
-    return { title: "Not Found" };
+  if (error || !entry) return { title: "Not Found" };
 
   const title = entry.filename.replace(/\.[^/.]+$/, "");
-  const image = entry.image_url || "/assets/logo.png";
-  const description = entry.description || "Lower Extremities X-ray positioning guide.";
+  const image = entry.image_url || "/assets/placeholder.png";
+  const description =
+    entry.description || "Lower Extremities X-ray positioning guide.";
 
   return {
     title: `${title} — Lower Extremities`,
@@ -47,7 +47,7 @@ export default async function LowerEntryPage({ params }: { params: { slug: strin
     .single();
 
   if (error || !entry) {
-    console.error("Lower entry not found:", error);
+    console.error("❌ Lower entry not found:", error);
     notFound();
   }
 
@@ -56,7 +56,7 @@ export default async function LowerEntryPage({ params }: { params: { slug: strin
     .download(entry.path);
 
   if (fileError || !fileData) {
-    console.error("File download error:", fileError);
+    console.error("❌ File download error:", fileError);
     notFound();
   }
 
@@ -77,7 +77,14 @@ export default async function LowerEntryPage({ params }: { params: { slug: strin
 
       {entry.image_url && (
         <div className="relative mb-6 overflow-hidden rounded-2xl">
-          <Image src={entry.image_url} alt={title} fill className="object-cover" priority />
+          <Image
+            src={entry.image_url}
+            alt={title}
+            width={1280}
+            height={720}
+            className="object-cover w-full h-auto rounded-2xl"
+            priority
+          />
         </div>
       )}
 
