@@ -28,10 +28,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
     }
 
-    // ✅ Single bucket name
+    // ✅ Single bucket
     const bucket = "xposilearn";
 
-    // ✅ Determine folder (category-based)
+    // ✅ Determine folder based on category
     let folderPath = "";
     if (category === "notes") {
       folderPath = `notes/${year || "general"}`;
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     }
 
     // ✅ File naming
-    const ext = file.name.split(".").pop();
+    const ext = file.name.split(".").pop()?.toLowerCase();
     const uniqueId = randomUUID();
     const fileName = `${uniqueId}.${ext}`;
     const fullPath = `${folderPath}/${fileName}`;
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     // 🧠 Convert file → buffer
     const fileBuffer = await fileToBuffer(file);
 
-    // ✅ Upload to Supabase Storage
+    // ✅ Upload to Supabase
     const { error: uploadError } = await supabaseAdmin.storage
       .from(bucket)
       .upload(fullPath, fileBuffer, {
@@ -66,19 +66,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: uploadError.message }, { status: 500 });
     }
 
-    // ✅ Get public URL
+    // ✅ Public URL
     const { data: publicData } = supabaseAdmin.storage.from(bucket).getPublicUrl(fullPath);
     const fileUrl = publicData?.publicUrl || "";
 
-    // ✅ Extract slug if markdown file
+    // ✅ Extract slug (for modules only)
     let slug = file.name.replace(/\.[^/.]+$/, "");
-    if (ext === "md") {
+    if (category === "module" && ext === "md") {
       const text = fileBuffer.toString("utf8");
       const { data } = matter(text);
       if (data?.slug) slug = data.slug;
     }
 
-    // ✅ Optional image upload (for module cards)
+    // ✅ Optional image upload (for modules)
     let imageUrl: string | null = null;
     if (image) {
       const imgBuffer = await fileToBuffer(image);
@@ -93,17 +93,18 @@ export async function POST(req: Request) {
           upsert: false,
         });
 
-      if (imgError) {
-        console.error("Image upload error:", imgError.message);
-      } else {
-        const { data: imgPublic } = supabaseAdmin.storage
+      if (!imgError) {
+        const { data: imgPublic } = await supabaseAdmin
+          .storage
           .from(bucket)
           .getPublicUrl(imgPath);
-        imageUrl = imgPublic.publicUrl;
+        imageUrl = imgPublic?.publicUrl || null;
+      } else {
+        console.error("Image upload error:", imgError.message);
       }
     }
 
-    // ✅ Save metadata to DB
+    // ✅ Insert into DB
     const { error: insertError } = await supabaseAdmin.from("uploads").insert([
       {
         filename: file.name,
@@ -113,7 +114,7 @@ export async function POST(req: Request) {
         file_url: fileUrl,
         image_url: imageUrl,
         path: fullPath,
-        slug,
+        slug, // only relevant for md files
       },
     ]);
 

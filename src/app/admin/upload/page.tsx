@@ -35,8 +35,68 @@ export default function UploadPage() {
     }
   }
 
+  // ===== LOAD FILES FOR DELETION =====
+  async function refreshFilesForDeletion() {
+    const cat = (document.getElementById("delCategory") as HTMLSelectElement)?.value;
+    const yr = (document.getElementById("delYear") as HTMLSelectElement)?.value;
+    const mod = (document.getElementById("delModule") as HTMLSelectElement)?.value;
+    const fileSelect = document.getElementById("delFilename") as HTMLSelectElement;
+
+    if (!fileSelect) return;
+    fileSelect.innerHTML = "<option value=''>Loading...</option>";
+
+    try {
+      const res = await fetch("/api/list-files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category: cat, year: yr, module: mod }),
+      });
+
+      const data = await res.json();
+
+      if (data.error) {
+        fileSelect.innerHTML = `<option value=''>Error: ${data.error}</option>`;
+        return;
+      }
+
+      const files = data.files || [];
+      if (files.length === 0) {
+        fileSelect.innerHTML = "<option value=''>No files found</option>";
+        return;
+      }
+
+      fileSelect.innerHTML = "<option value=''>Select...</option>";
+      files.forEach((f: any) => {
+        const opt = document.createElement("option");
+        opt.value = f.id; // ✅ store file ID (safe deletion)
+        opt.textContent = f.filename;
+        fileSelect.appendChild(opt);
+      });
+    } catch (err) {
+      console.error("Error fetching file list:", err);
+      fileSelect.innerHTML = "<option value=''>Error fetching files</option>";
+    }
+  }
+
   useEffect(() => {
     refreshLinks();
+
+    const cat = document.getElementById("delCategory");
+    const yr = document.getElementById("delYear");
+    const mod = document.getElementById("delModule");
+
+    const listener = () => refreshFilesForDeletion();
+    cat?.addEventListener("change", listener);
+    yr?.addEventListener("change", listener);
+    mod?.addEventListener("change", listener);
+
+    refreshFilesForDeletion();
+
+    return () => {
+      cat?.removeEventListener("change", listener);
+      yr?.removeEventListener("change", listener);
+      mod?.removeEventListener("change", listener);
+    };
   }, []);
 
   // ===== FILE UPLOAD =====
@@ -66,11 +126,9 @@ export default function UploadPage() {
         setStatus(`✅ Uploaded successfully! (${file.name})`);
         setFile(null);
         setImage(null);
-
-        const fileInput = document.getElementById("fileInput") as HTMLInputElement;
-        const imageInput = document.getElementById("imageInput") as HTMLInputElement;
-        if (fileInput) fileInput.value = "";
-        if (imageInput) imageInput.value = "";
+        (document.getElementById("fileInput") as HTMLInputElement).value = "";
+        (document.getElementById("imageInput") as HTMLInputElement).value = "";
+        refreshFilesForDeletion();
       } else {
         setStatus(`❌ Error: ${data.error || "Upload failed"}`);
       }
@@ -137,13 +195,9 @@ export default function UploadPage() {
   // ===== DELETE FILE =====
   const handleFileDelete = async (e: React.FormEvent) => {
     e.preventDefault();
-    const category = (document.getElementById("delCategory") as HTMLSelectElement).value;
-    const filename = (document.getElementById("delFilename") as HTMLSelectElement).value;
-    const year = (document.getElementById("delYear") as HTMLSelectElement)?.value;
-    const module = (document.getElementById("delModule") as HTMLSelectElement)?.value;
-
-    if (!filename) return alert("Please select a file to delete.");
-    if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
+    const fileId = (document.getElementById("delFilename") as HTMLSelectElement).value;
+    if (!fileId) return alert("Please select a file to delete.");
+    if (!confirm("Are you sure you want to delete this file?")) return;
 
     setStatus("⏳ Deleting file...");
 
@@ -151,13 +205,12 @@ export default function UploadPage() {
       const res = await fetch("/api/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category, filename, year, module }),
+        body: JSON.stringify({ id: fileId }), // ✅ send ID
       });
       const data = await res.json();
       if (data.success) {
         setStatus("✅ File deleted successfully!");
-        const fileSelect = document.getElementById("delFilename") as HTMLSelectElement;
-        fileSelect.innerHTML = "<option value=''>Select...</option>";
+        refreshFilesForDeletion();
       } else setStatus(`❌ Error: ${data.error}`);
     } catch (err) {
       console.error("Error deleting file:", err);
@@ -275,7 +328,6 @@ export default function UploadPage() {
           </button>
         </form>
       </section>
-
       {/* ================== ADD USEFUL LINK ================== */}
       <section className="border border-neutral-200 p-6 rounded-xl">
         <h2 className="text-xl font-semibold text-blue-700 mb-4 text-center border-b pb-2">
@@ -343,7 +395,6 @@ export default function UploadPage() {
           </div>
         </form>
       </section>
-
       {/* ================== DELETE FILE ================== */}
       <section className="border border-neutral-200 p-6 rounded-xl">
         <h2 className="text-xl font-semibold text-red-600 mb-4 text-center border-b pb-2">
@@ -376,7 +427,11 @@ export default function UploadPage() {
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Year</label>
-              <select id="delYear" defaultValue="year-1" className="block w-full border border-neutral-300 rounded-md p-2">
+              <select
+                id="delYear"
+                defaultValue="year-1"
+                className="block w-full border border-neutral-300 rounded-md p-2"
+              >
                 <option value="year-1">Year 1</option>
                 <option value="year-2">Year 2</option>
                 <option value="year-3">Year 3</option>
@@ -384,7 +439,11 @@ export default function UploadPage() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Module</label>
-              <select id="delModule" defaultValue="upper" className="block w-full border border-neutral-300 rounded-md p-2">
+              <select
+                id="delModule"
+                defaultValue="upper"
+                className="block w-full border border-neutral-300 rounded-md p-2"
+              >
                 <option value="upper">Upper Extremities</option>
                 <option value="lower">Lower Extremities</option>
                 <option value="pelvic">Pelvic Girdle</option>
@@ -407,7 +466,6 @@ export default function UploadPage() {
         </p>
       )}
 
-      {/* ================== LOGOUT ================== */}
       <div className="flex justify-center pt-8">
         <button
           onClick={() => {
