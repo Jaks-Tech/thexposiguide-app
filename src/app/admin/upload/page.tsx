@@ -126,8 +126,12 @@ export default function UploadPage() {
         setStatus(`✅ Uploaded successfully! (${file.name})`);
         setFile(null);
         setImage(null);
-        (document.getElementById("fileInput") as HTMLInputElement).value = "";
-        (document.getElementById("imageInput") as HTMLInputElement).value = "";
+        const fileInput = document.getElementById("fileInput") as HTMLInputElement | null;
+        const imageInput = document.getElementById("imageInput") as HTMLInputElement | null;
+
+        if (fileInput) fileInput.value = "";
+        if (imageInput) imageInput.value = "";
+
         refreshFilesForDeletion();
       } else {
         setStatus(`❌ Error: ${data.error || "Upload failed"}`);
