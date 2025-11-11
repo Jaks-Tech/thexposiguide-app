@@ -1,34 +1,24 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { supabaseAdmin } from "@/lib/supabaseServer";
 
-export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { name, url, category } = body;
-
+    const { name, url, category } = await req.json();
     if (!name || !url) {
-      return NextResponse.json({ error: "Missing name or URL." }, { status: 400 });
+      return NextResponse.json({ error: "Missing link name or URL" }, { status: 400 });
     }
 
-    const root = process.cwd();
-    const filePath = path.join(root, "public", "xposilearn", "useful-links.json");
+    const { error } = await supabaseAdmin
+      .from("links")
+      .insert([{ name, url, category }]);
 
-    let existing: any[] = [];
-    if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath, "utf-8");
-      existing = JSON.parse(data);
-    }
-
-    existing.push({ name, url, category });
-
-    fs.writeFileSync(filePath, JSON.stringify(existing, null, 2));
+    if (error) throw error;
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Add link failed:", error);
-    return NextResponse.json({ error: "Failed to add link" }, { status: 500 });
+  } catch (err: any) {
+    console.error("❌ Add link error:", err);
+    return NextResponse.json({ error: err.message || "Failed to add link" }, { status: 500 });
   }
 }

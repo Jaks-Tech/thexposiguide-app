@@ -1,47 +1,52 @@
 import { NextResponse } from "next/server";
-import fs from "node:fs";
-import path from "node:path";
+import { supabaseAdmin } from "@/lib/supabaseServer";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
     const { category, year, module } = await req.json();
-    const root = process.cwd();
-    let dir = "";
 
-    // ✅ Notes & Papers
+    if (!category) {
+      return NextResponse.json({ error: "Missing category" }, { status: 400 });
+    }
+
+    // 🧠 Query uploads metadata table in Supabase
+    let query = supabaseAdmin.from("uploads").select("filename, category, year, module");
+
+    query = query.eq("category", category);
+
     if (category === "notes" || category === "papers") {
-      if (!year) {
+      if (!year)
         return NextResponse.json(
-          { error: "Missing year for notes/papers" },
+          { error: "Missing year for notes/papers." },
           { status: 400 }
         );
-      }
-      dir = path.join(root, "public", "xposilearn", category, year);
+      query = query.eq("year", year);
     }
 
-    // ✅ Modules (new structure)
-    else if (category === "module") {
-      if (!module) {
+    if (category === "module") {
+      if (!module)
         return NextResponse.json(
-          { error: "Missing module for markdown listing" },
+          { error: "Missing module for markdown listing." },
           { status: 400 }
         );
-      }
-      dir = path.join(root, "public", "xposilearn", "modules", module);
+      query = query.eq("module", module);
     }
 
-    // Validate directory
-    if (!fs.existsSync(dir)) {
-      return NextResponse.json({ files: [] });
+    const { data, error } = await query.order("filename", { ascending: true });
+
+    if (error) {
+      console.error("❌ Supabase list-files error:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const files = fs
-      .readdirSync(dir)
-      .filter((f) => f.endsWith(".md") || f.endsWith(".pdf") || f.endsWith(".docx"));
+    const files = data?.map((row: any) => row.filename) || [];
 
     return NextResponse.json({ files });
   } catch (err: any) {
-    console.error("Error listing files:", err);
+    console.error("❌ Error listing files:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

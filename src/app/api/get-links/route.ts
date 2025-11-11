@@ -1,23 +1,20 @@
 import { NextResponse } from "next/server";
-import fs from "node:fs";
-import path from "node:path";
+import { supabaseAdmin } from "@/lib/supabaseServer";
 
-// ✅ Correct file path
-const LINKS_PATH = path.join(process.cwd(), "public", "xposilearn", "useful-links.json");
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    if (!fs.existsSync(LINKS_PATH)) {
-      console.warn("No useful-links.json found at:", LINKS_PATH);
-      return NextResponse.json({ links: [] });
-    }
+    const { data, error } = await supabaseAdmin
+      .from("links")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-    const jsonData = fs.readFileSync(LINKS_PATH, "utf8");
-    const links = JSON.parse(jsonData);
+    if (error) throw error;
 
-    return NextResponse.json({ links });
+    return NextResponse.json({ links: data || [] });
   } catch (err: any) {
-    console.error("Error reading useful-links.json:", err);
+    console.error("❌ Get links error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

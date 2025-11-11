@@ -1,44 +1,79 @@
-import { listEntries } from "@/lib/md";
+"use client";
+import Head from "next/head";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 import EntryCard from "@/components/EntryCard";
+import type { EntryMeta } from "@/lib/md"; // ✅ import type for strong typing
 
-export const metadata = {
-  title: "Upper Extremities — The XPosiGuide",
-  description: "X-ray positioning — Upper Extremities procedures and projections.",
-};
+export default function UpperExtremitiesPage() {
+  const [entries, setEntries] = useState<EntryMeta[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default async function UpperExtremitiesPage() {
-  const entries = await listEntries("upper");
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from("uploads")
+        .select("filename, url, image_url, path")
+        .eq("category", "module")
+        .eq("module", "upper")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching uploads:", error.message);
+        setEntries([]);
+      } else {
+        const formatted: EntryMeta[] =
+          data?.map((e) => ({
+            title: e.filename.replace(/\.[^/.]+$/, ""), // remove extension
+            slug: e.filename.replace(/\.[^/.]+$/, ""),
+            description: "",
+            image: e.image_url || "",
+            region: "",
+            projection: "",
+            url: e.url,
+          })) || [];
+        setEntries(formatted);
+      }
+
+      setLoading(false);
+    })();
+  }, []);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-      {/* Header */}
-      <header className="mb-10 text-center">
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-blue-600">
-          Upper Extremities
-        </h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-300 text-base sm:text-lg">
-          Browse positioning guides for radiographic procedures of the upper limb.
-        </p>
-      </header>
+    <>
+      <Head>
+        <title>Upper Extremities — The XPosiGuide</title>
+        <meta
+          name="description"
+          content="X-ray positioning — Upper Extremities procedures and projections."
+        />
+      </Head>
 
-      {/* Content */}
-      {entries.length === 0 ? (
-        <p className="text-gray-500 dark:text-gray-400 text-center">
-          No entries yet. Add <code>*.md</code> files under{" "}
-          <code>/public/illustrations/upper/</code> or your content directory.
-        </p>
-      ) : (
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {entries.map((e, index) => (
-            <EntryCard
-              key={`${e.slug}-${index}`} // ✅ guarantees unique key
-              href={`/upper-extremities/${e.slug}`}
-              entry={e}
-              subdir="upper"
-            />
-          ))}
-        </section>
-      )}
-    </main>
+      <main className="mx-auto max-w-6xl px-4 py-10">
+        <header className="text-center mb-10">
+          <h1 className="text-4xl font-bold text-blue-600">Upper Extremities</h1>
+          <p className="text-gray-600 mt-2">
+            Browse positioning guides for radiographic procedures of the upper limb.
+          </p>
+        </header>
+
+        {loading ? (
+          <p className="text-center text-gray-500">Loading…</p>
+        ) : entries.length === 0 ? (
+          <p className="text-center text-gray-500">No modules uploaded yet.</p>
+        ) : (
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {entries.map((entry) => (
+              <EntryCard
+                key={entry.slug}
+                href={entry.url || "#"}
+                entry={entry}
+                subdir="upper"
+              />
+            ))}
+          </section>
+        )}
+      </main>
+    </>
   );
 }

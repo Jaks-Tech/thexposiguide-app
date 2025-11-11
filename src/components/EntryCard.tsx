@@ -20,7 +20,6 @@ export default function EntryCard({ href, entry, subdir }: Props) {
       className="group relative block overflow-hidden rounded-2xl bg-gradient-to-br from-blue-200 via-sky-100 to-blue-300 p-[1px] shadow-md hover:shadow-lg transition"
     >
       <div className="rounded-2xl bg-white">
-        {/* Image */}
         <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-2xl">
           <Image
             src={img}
@@ -31,7 +30,6 @@ export default function EntryCard({ href, entry, subdir }: Props) {
           />
         </div>
 
-        {/* Text */}
         <div className="p-4 sm:p-5">
           <h3 className="text-lg font-semibold tracking-tight text-gray-900 group-hover:text-blue-600">
             {entry.title}
