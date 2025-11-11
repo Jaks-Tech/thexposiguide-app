@@ -65,7 +65,7 @@ export default function PelvicGirdlePage() {
             {entries.map((entry) => (
               <EntryCard
                 key={entry.slug}
-                href={entry.url || "#"}
+                href={`/pelvic-girdle/${entry.slug}`}
                 entry={entry}
                 subdir="pelvic"
               />

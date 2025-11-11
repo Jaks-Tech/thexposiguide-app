@@ -64,7 +64,7 @@ export default function LowerExtremitiesPage() {
             {entries.map((entry) => (
               <EntryCard
                 key={entry.slug}
-                href={entry.url || "#"}
+                href={`/lower-extremities/${entry.slug}`}
                 entry={entry}
                 subdir="lower"
               />

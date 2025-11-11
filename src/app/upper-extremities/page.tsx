@@ -66,7 +66,7 @@ export default function UpperExtremitiesPage() {
             {entries.map((entry) => (
               <EntryCard
                 key={entry.slug}
-                href={entry.url || "#"}
+                href={`/upper-extremities/${entry.slug}`}
                 entry={entry}
                 subdir="upper"
               />
