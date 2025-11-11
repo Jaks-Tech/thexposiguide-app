@@ -3,7 +3,7 @@ import Head from "next/head";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import EntryCard from "@/components/EntryCard";
-import type { EntryMeta } from "@/lib/md"; // ✅ import type for strong typing
+import type { EntryMeta } from "@/lib/md"; // ✅ type import
 
 export default function UpperExtremitiesPage() {
   const [entries, setEntries] = useState<EntryMeta[]>([]);
@@ -13,7 +13,7 @@ export default function UpperExtremitiesPage() {
     (async () => {
       const { data, error } = await supabase
         .from("uploads")
-        .select("filename, url, image_url, path")
+        .select("filename, file_url, image_url, path")
         .eq("category", "module")
         .eq("module", "upper")
         .order("created_at", { ascending: false });
@@ -24,13 +24,13 @@ export default function UpperExtremitiesPage() {
       } else {
         const formatted: EntryMeta[] =
           data?.map((e) => ({
-            title: e.filename.replace(/\.[^/.]+$/, ""), // remove extension
+            title: e.filename.replace(/\.[^/.]+$/, ""), // remove .md, .docx etc.
             slug: e.filename.replace(/\.[^/.]+$/, ""),
             description: "",
-            image: e.image_url || "",
+            image: e.image_url || "/assets/placeholder.png",
             region: "",
             projection: "",
-            url: e.url,
+            url: e.file_url,
           })) || [];
         setEntries(formatted);
       }

@@ -13,7 +13,7 @@ export default function PelvicGirdlePage() {
     async function fetchEntries() {
       const { data, error } = await supabase
         .from("uploads")
-        .select("filename, url, image_url, path")
+        .select("filename, file_url, image_url, path")
         .eq("category", "module")
         .eq("module", "pelvic")
         .order("created_at", { ascending: false });
@@ -24,13 +24,13 @@ export default function PelvicGirdlePage() {
       } else {
         const formatted: EntryMeta[] =
           data?.map((e) => ({
-            title: e.filename.replace(/\.[^/.]+$/, ""),
+            title: e.filename.replace(/\.[^/.]+$/, ""), // remove extension
             slug: e.filename.replace(/\.[^/.]+$/, ""),
             description: "",
-            image: e.image_url || "",
+            image: e.image_url || "/assets/placeholder.png",
             region: "",
             projection: "",
-            url: e.url,
+            url: e.file_url,
           })) || [];
         setEntries(formatted);
       }

@@ -13,7 +13,7 @@ export default function LowerExtremitiesPage() {
     (async () => {
       const { data, error } = await supabase
         .from("uploads")
-        .select("filename, url, image_url, path")
+        .select("filename, file_url, image_url, path")
         .eq("category", "module")
         .eq("module", "lower")
         .order("created_at", { ascending: false });
@@ -27,10 +27,10 @@ export default function LowerExtremitiesPage() {
             title: e.filename.replace(/\.[^/.]+$/, ""),
             slug: e.filename.replace(/\.[^/.]+$/, ""),
             description: "",
-            image: e.image_url || "",
+            image: e.image_url || "/assets/placeholder.png",
             region: "",
             projection: "",
-            url: e.url,
+            url: e.file_url,
           })) || [];
         setEntries(formatted);
       }
