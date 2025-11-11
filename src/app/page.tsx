@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import GalleryImage from "@/components/GalleryImage";
+import AnnouncementsWidget from "@/components/AnnouncementsWidget";
 
 export default function HomePage() {
   return (
@@ -17,11 +18,9 @@ export default function HomePage() {
 
       {/* Running tagline */}
       <div className="mt-5 overflow-hidden">
-      
-      {/* ✅ Static slogan */}
-      <p className="text-blue-600 font-semibold text-lg">
-        Position right • Expose smart • Diagnose clear
-      </p>
+        <p className="text-blue-600 font-semibold text-lg">
+          Position right • Expose smart • Diagnose clear
+        </p>
       </div>
 
       {/* INTRO VIDEO */}
@@ -56,6 +55,7 @@ export default function HomePage() {
                 src="/assets/upper-extremities.png"
                 alt="Upper Extremities"
                 fill
+                unoptimized
                 className="object-contain p-6"
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                 priority
@@ -129,7 +129,7 @@ export default function HomePage() {
           >
             <div className="relative w-full aspect-[4/3]">
               <Image
-                src="/assets/xposilearn.png" // Add this thumbnail in /public/assets/
+                src="/assets/xposilearn.png"
                 alt="XPosiLearn"
                 fill
                 className="object-contain p-6"
@@ -141,10 +141,12 @@ export default function HomePage() {
                 XPosiLearn
               </h3>
               <p className="text-sm text-neutral-600 mt-1 line-clamp-2">
-                Study & revision hub with Notes, Past Papers, and reference materials for all levels.
+                Study & revision hub with Notes, Past Papers, and reference
+                materials for all levels.
               </p>
             </div>
           </Link>
+
           {/* XPosi AI */}
           <Link
             href="/xposi-ai"
@@ -152,10 +154,11 @@ export default function HomePage() {
           >
             <div className="relative w-full aspect-[4/3]">
               <Image
-                src="/assets/xposi-ai.png" // 📸 you’ll add this image next
+                src="/assets/xposi-ai.png"
                 alt="XPosi AI"
                 fill
                 className="object-contain p-6"
+                unoptimized
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               />
             </div>
@@ -164,11 +167,11 @@ export default function HomePage() {
                 XPosi AI
               </h3>
               <p className="text-sm text-neutral-600 mt-1 line-clamp-2">
-                Intelligent radiography assistant that reads and explains past papers.
+                Intelligent radiography assistant that reads and explains past
+                papers.
               </p>
             </div>
           </Link>
-
         </div>
       </section>
 
@@ -207,9 +210,19 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* 🗣️ ANNOUNCEMENTS SECTION */}
+      <section className="mt-30 mb-20">
+        <div className="max-w-5xl mx-auto bg-blue-100 border border-blue-300 rounded-2xl p-8 shadow-sm">
+          <h2 className="text-2xl sm:text-2xl font-bold text-blue-700 mb-6">
+            🗣️ TheXposi Quick Briefs
+          </h2>
+          <AnnouncementsWidget />
+        </div>
+      </section>
+
       {/* IMAGE GALLERY */}
       <section className="mt-14 sm:mt-16">
-        <h2 className="text-xl sm:text-2xl font-semibold text-blue-600 mb-6">
+        <h2 className="text-xl sm:text-2xl font-semibold text-blue-700 mb-6">
           Glimpse into Practice
         </h2>
 
@@ -271,37 +284,38 @@ export default function HomePage() {
           ))}
         </div>
       </section>
-        {/* ✉️ Newsletter Section */}
-        <section className="relative mt-16 mb-14 px-4 animate-fadeInUp">
-          <div className="relative max-w-2xl sm:max-w-3xl mx-auto overflow-hidden rounded-3xl shadow-lg bg-gradient-to-br from-blue-700 via-blue-600 to-blue-500 text-white p-8 sm:p-10 transition-transform hover:scale-[1.01]">
-            {/* Decorative overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent backdrop-blur-sm" />
-        
-            <div className="relative z-10 text-center">
-              <h2 className="text-xl sm:text-2xl font-extrabold mb-2 tracking-tight">
-                Subscribe to <span className="text-white/90">The XPosiGuide</span> Newsletter
-              </h2>
-              <p className="text-white/80 text-sm sm:text-base mb-6 max-w-md mx-auto">
-                Join our growing community of radiography learners! Get updates on new
-                modules, study resources, and AI-powered learning tools delivered to your inbox.
-              </p>
-        
-              {/* ✅ Smaller MailerLite Embed */}
-              <div
-                className="ml-embedded mx-auto bg-white rounded-2xl p-4 sm:p-6 max-w-md"
-                data-form="R6RPfh"
-              ></div>
-        
-              {/* 🎉 Success message */}
-              <div
-                id="successMessage"
-                className="hidden mt-5 bg-white/10 text-white rounded-lg px-4 py-2 text-sm sm:text-base font-medium shadow-md backdrop-blur-md"
-              >
-                🎉 Thanks for joining <span className="font-semibold">The XPosiGuide</span> community!
-              </div>
+
+      {/* ✉️ Newsletter Section */}
+      <section className="relative mt-16 mb-14 px-4 animate-fadeInUp">
+        <div className="relative max-w-2xl sm:max-w-3xl mx-auto overflow-hidden rounded-3xl shadow-lg bg-gradient-to-br from-blue-700 via-blue-600 to-blue-500 text-white p-8 sm:p-10 transition-transform hover:scale-[1.01]">
+          {/* Decorative overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent backdrop-blur-sm" />
+
+          <div className="relative z-10 text-center">
+            <h2 className="text-xl sm:text-2xl font-extrabold mb-2 tracking-tight">
+              Subscribe to <span className="text-white/90">The XPosiGuide</span> Newsletter
+            </h2>
+            <p className="text-white/80 text-sm sm:text-base mb-6 max-w-md mx-auto">
+              Join our growing community of radiography learners! Get updates on new
+              modules, study resources, and AI-powered learning tools delivered to your inbox.
+            </p>
+
+            {/* ✅ Smaller MailerLite Embed */}
+            <div
+              className="ml-embedded mx-auto bg-white rounded-2xl p-4 sm:p-6 max-w-md"
+              data-form="R6RPfh"
+            ></div>
+
+            {/* 🎉 Success message */}
+            <div
+              id="successMessage"
+              className="hidden mt-5 bg-white/10 text-white rounded-lg px-4 py-2 text-sm sm:text-base font-medium shadow-md backdrop-blur-md"
+            >
+              🎉 Thanks for joining <span className="font-semibold">The XPosiGuide</span> community!
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
       {/* FOOTER DISCLAIMER */}
       <footer className="mt-14 border-t border-neutral-200 pt-6 pb-8 text-sm text-neutral-500 text-center px-4">

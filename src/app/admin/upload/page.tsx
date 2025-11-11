@@ -1,7 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-
+import DeleteAssignmentSection from "@/components/DeleteAssignmentSection";
+import DeleteAnnouncementSection from "@/components/DeleteAnnouncementSection";
+import EditAnnouncementSection from "@/components/EditAnnouncementSection";
 export default function UploadPage() {
   const router = useRouter();
 
@@ -272,6 +274,7 @@ export default function UploadPage() {
                   <option value="year-1">Year 1</option>
                   <option value="year-2">Year 2</option>
                   <option value="year-3">Year 3</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
             )}
@@ -371,6 +374,279 @@ export default function UploadPage() {
           </button>
         </form>
       </section>
+        {/* ================== ADD ANNOUNCEMENT ================== */}
+        <section className="border border-neutral-200 p-6 rounded-xl">
+          <h2 className="text-xl font-semibold text-blue-700 mb-4 text-center border-b pb-2">
+            🗣️ Post Announcement
+          </h2>
+
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+
+              const title = (document.getElementById("announceTitle") as HTMLInputElement).value.trim();
+              const message = (document.getElementById("announceMsg") as HTMLTextAreaElement).value.trim();
+              const startInput = (document.getElementById("announceStart") as HTMLInputElement).value;
+              const endInput = (document.getElementById("announceEnd") as HTMLInputElement).value;
+
+              if (!title || !message || !startInput || !endInput) {
+                return alert("⚠️ Please fill in all fields before posting.");
+              }
+
+              // Convert local time → UTC ISO
+              const start_time = new Date(startInput).toISOString();
+              const end_time = new Date(endInput).toISOString();
+
+              // Validate time order
+              if (new Date(end_time) <= new Date(start_time)) {
+                return alert("⚠️ End time must be after start time.");
+              }
+
+              // Visual feedback
+              const button = (e.target as HTMLFormElement).querySelector("button")!;
+              button.disabled = true;
+              button.textContent = "Posting...";
+
+              try {
+                const res = await fetch("/api/announcements/post", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ title, message, start_time, end_time }),
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                  alert("✅ Announcement posted successfully!");
+                  (e.target as HTMLFormElement).reset();
+                } else {
+                  alert(`❌ Failed to post: ${data.error || "Unknown error"}`);
+                }
+              } catch (err) {
+                console.error("❌ Error posting announcement:", err);
+                alert("❌ Network error while posting announcement.");
+              } finally {
+                button.disabled = false;
+                button.textContent = "Post Announcement";
+              }
+            }}
+            className="space-y-4"
+          >
+            <input
+              id="announceTitle"
+              type="text"
+              placeholder="Announcement Title"
+              className="block w-full border border-neutral-300 rounded-md p-2"
+              required
+            />
+
+            <textarea
+              id="announceMsg"
+              placeholder="Enter announcement message"
+              className="block w-full border border-neutral-300 rounded-md p-2 h-28"
+              required
+            />
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm mb-1 font-medium">Start Time</label>
+                <input
+                  id="announceStart"
+                  type="datetime-local"
+                  className="w-full border border-neutral-300 rounded-md p-2"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-1 font-medium">End Time</label>
+                <input
+                  id="announceEnd"
+                  type="datetime-local"
+                  className="w-full border border-neutral-300 rounded-md p-2"
+                  required
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white font-semibold py-2 rounded-md hover:bg-blue-700 transition disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              Post Announcement
+            </button>
+          </form>
+        </section>
+
+        {/* ================== RECURRING SCHEDULER ================== */}
+        <section className="border border-neutral-200 p-6 rounded-xl">
+          <h2 className="text-xl font-semibold text-blue-700 mb-4 text-center border-b pb-2">
+            🔁 Schedule Recurring Announcement
+          </h2>
+
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const title = (document.getElementById("recTitle") as HTMLInputElement).value;
+              const message = (document.getElementById("recMessage") as HTMLTextAreaElement).value;
+              const start = (document.getElementById("recStart") as HTMLInputElement).value;
+              const end = (document.getElementById("recEnd") as HTMLInputElement).value;
+              const rule = (document.getElementById("recRule") as HTMLSelectElement).value;
+
+              // Collect selected weekdays
+              const repeatDays = Array.from(
+                document.querySelectorAll("input[name='repeatDays']:checked")
+              ).map((el: any) => el.value);
+
+              const res = await fetch("/api/announcements/post", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  title,
+                  message,
+                  start_time: start,
+                  end_time: end,
+                  repeat_rule: rule,
+                  repeat_days: repeatDays,
+                }),
+              });
+
+              const data = await res.json();
+              alert(data.success ? "✅ Recurring announcement scheduled!" : `❌ ${data.error}`);
+            }}
+            className="space-y-4"
+          >
+            <input
+              id="recTitle"
+              type="text"
+              placeholder="Class or Announcement Title"
+              className="block w-full border border-neutral-300 rounded-md p-2"
+              required
+            />
+            <textarea
+              id="recMessage"
+              placeholder="Describe your recurring announcement..."
+              className="block w-full border border-neutral-300 rounded-md p-2"
+              required
+            />
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm mb-1">Start Time</label>
+                <input id="recStart" type="datetime-local" className="w-full border border-neutral-300 rounded-md p-2" required />
+              </div>
+              <div>
+                <label className="block text-sm mb-1">End Time</label>
+                <input id="recEnd" type="datetime-local" className="w-full border border-neutral-300 rounded-md p-2" required />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm mb-1">Recurrence</label>
+              <select id="recRule" className="w-full border border-neutral-300 rounded-md p-2">
+                <option value="">None (One-time)</option>
+                <option value="daily">Every Day</option>
+                <option value="weekly">Every Week</option>
+                <option value="custom">Custom Days</option>
+              </select>
+            </div>
+
+            {/* 🗓️ Custom days */}
+            <div className="flex flex-wrap gap-2 mt-2">
+              {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
+                <label key={day} className="flex items-center gap-1 text-sm">
+                  <input type="checkbox" name="repeatDays" value={day} /> {day}
+                </label>
+              ))}
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white font-semibold py-2 rounded-md hover:bg-blue-700"
+            >
+              Schedule Recurring Announcement
+            </button>
+          </form>
+        </section>
+
+
+{/* ================== DELETE & EDIT ANNOUNCEMENT ================== */}
+        <EditAnnouncementSection />
+        <DeleteAnnouncementSection />
+
+
+      {/* ================== UPLOAD ASSIGNMENT ================== */}
+      <section className="border border-neutral-200 p-6 rounded-xl">
+        <h2 className="text-xl font-semibold text-blue-700 mb-4 text-center border-b pb-2">
+          📚 Upload Assignment
+        </h2>
+
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const form = e.target as HTMLFormElement;
+            const formData = new FormData(form);
+
+            const res = await fetch("/api/assignments/upload", {
+              method: "POST",
+              body: formData,
+            });
+
+            const data = await res.json();
+            alert(data.success ? "✅ Assignment uploaded!" : `❌ ${data.error}`);
+          }}
+          className="space-y-4"
+        >
+          <input
+            type="text"
+            name="title"
+            placeholder="Assignment Title"
+            className="block w-full border border-neutral-300 rounded-md p-2"
+            required
+          />
+          <textarea
+            name="description"
+            placeholder="Short description (optional)"
+            className="block w-full border border-neutral-300 rounded-md p-2"
+          />
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm mb-1">Year</label>
+              <select
+                name="year"
+                className="block w-full border border-neutral-300 rounded-md p-2"
+                required
+              >
+                <option value="year-1">Year 1</option>
+                <option value="year-2">Year 2</option>
+                <option value="year-3">Year 3</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Deadline</label>
+              <input
+                type="datetime-local"
+                name="deadline"
+                className="block w-full border border-neutral-300 rounded-md p-2"
+              />
+            </div>
+          </div>
+          <input
+            type="file"
+            name="file"
+            accept="*/*"
+            className="block w-full border border-neutral-300 rounded-md p-2"
+            required
+          />
+          <button
+            type="submit"
+            className="w-full bg-green-600 text-white font-semibold py-2 rounded-md hover:bg-green-700"
+          >
+            Upload Assignment
+          </button>
+        </form>
+      </section>
+
+      {/* ================== DELETE ASSIGNMENT ================== */}
+        
+        <DeleteAssignmentSection />
 
       {/* ================== DELETE LINK ================== */}
       <section className="border border-neutral-200 p-6 rounded-xl">
@@ -486,3 +762,8 @@ export default function UploadPage() {
     </main>
   );
 }
+
+
+
+
+
