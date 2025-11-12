@@ -10,7 +10,11 @@ export const metadata: Metadata = {
   title: "The XPosiGuide",
   description:
     "An educational X-ray positioning guide for radiography students and professionals.",
+  icons: {
+    icon: "/xposiguide.svg", // ✅ Custom favicon added
+  },
 };
+
 
 export default function RootLayout({
   children,
