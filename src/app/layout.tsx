@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description:
     "An educational X-ray positioning guide for radiography students and professionals.",
   icons: {
-    icon: "/xposiguid.svg", // ✅ Custom favicon added
+    icon: "/finalxposi.svg", // ✅ Custom favicon added
   },
 };
 
