@@ -1,43 +1,18 @@
-"use client";
-import Head from "next/head";
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { listEntries, loadEntryPreview } from "@/lib/md";
 import EntryCard from "@/components/EntryCard";
-import type { EntryMeta } from "@/lib/md"; // ✅ type import
+import Head from "next/head";
 
-export default function UpperExtremitiesPage() {
-  const [entries, setEntries] = useState<EntryMeta[]>([]);
-  const [loading, setLoading] = useState(true);
+export default async function UpperExtremitiesPage() {
+  // Fetch metadata from uploads table
+  const entries = await listEntries("upper");
 
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase
-        .from("uploads")
-        .select("filename, file_url, image_url, path")
-        .eq("category", "module")
-        .eq("module", "upper")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching uploads:", error.message);
-        setEntries([]);
-      } else {
-        const formatted: EntryMeta[] =
-          data?.map((e) => ({
-            title: e.filename.replace(/\.[^/.]+$/, ""), // remove .md, .docx etc.
-            slug: e.filename.replace(/\.[^/.]+$/, ""),
-            description: "",
-            image: e.image_url || "/assets/placeholder.png",
-            region: "",
-            projection: "",
-            url: e.file_url,
-          })) || [];
-        setEntries(formatted);
-      }
-
-      setLoading(false);
-    })();
-  }, []);
+  // Fetch preview text for each entry
+  const entriesWithPreview = await Promise.all(
+    entries.map(async (entry) => {
+      const preview = await loadEntryPreview("upper", entry.slug);
+      return { ...entry, description: preview };
+    })
+  );
 
   return (
     <>
@@ -57,13 +32,11 @@ export default function UpperExtremitiesPage() {
           </p>
         </header>
 
-        {loading ? (
-          <p className="text-center text-gray-500">Loading…</p>
-        ) : entries.length === 0 ? (
+        {entriesWithPreview.length === 0 ? (
           <p className="text-center text-gray-500">No modules uploaded yet.</p>
         ) : (
           <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {entries.map((entry) => (
+            {entriesWithPreview.map((entry) => (
               <EntryCard
                 key={entry.slug}
                 href={`/upper-extremities/${entry.slug}`}

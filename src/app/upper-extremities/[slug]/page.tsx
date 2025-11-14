@@ -5,6 +5,7 @@ import { remark } from "remark";
 import html from "remark-html";
 import Image from "next/image";
 import ReadAloud from "@/components/ReadAloud";
+import BackButton from "@/components/BackButton";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -87,8 +88,10 @@ export default async function UpperEntryPage({ params }: { params: Promise<{ slu
           priority
         />
       </div>
+     
 
       <ReadAloud title={title} html={htmlContent} />
+      <BackButton href="/upper-extremities" />
 
       <article className="prose dark:prose-invert">
         <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
