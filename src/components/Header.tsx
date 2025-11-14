@@ -45,7 +45,10 @@ export default function Header() {
                 className="rounded-full shadow-sm"
               />
             )}
-            <span className="text-lg sm:text-xl font-bold tracking-wide whitespace-nowrap">
+            <span
+              className="text-lg sm:text-xl font-bold tracking-wide whitespace-nowrap"
+              style={{ cursor: "pointer" }}
+            >
               The XPosiGuide
             </span>
           </Link>

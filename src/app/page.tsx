@@ -57,7 +57,8 @@ export default function HomePage() {
   };
 
   return (
-    <main
+    
+       <main
       className="
         mx-auto w-full 
         max-w-[1700px] 
@@ -437,5 +438,6 @@ export default function HomePage() {
         </p>
       </footer>
     </main>
+  
   );
 }
