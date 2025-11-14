@@ -20,14 +20,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-white text-neutral-900 flex flex-col">
 
         {/* HEADER */}
-        <Header />
+          {/* HEADER BLOCK (we measure this with CSS only) */}
+          <div id="header-block">
+            <Header />
 
-        {/* MARQUEE */}
-        <div className="overflow-hidden bg-gradient-to-r from-blue-700 via-blue-600 to-blue-800 text-white py-2 shadow-md">
-          <div className="whitespace-nowrap animate-marquee font-medium text-sm sm:text-base tracking-wide">
-            ⚡ Welcome to The XPosiGuide | Radiography Learning & Practice!
+            <div className="overflow-hidden bg-gradient-to-r from-blue-700 via-blue-600 to-blue-800 text-white py-2 shadow-md">
+              <div className="whitespace-nowrap animate-marquee font-medium text-sm sm:text-base tracking-wide">
+                ⚡ Welcome to The XPosiGuide — Learn, Revise & Practice!
+              </div>
+            </div>
           </div>
-        </div>
+
 
         {/* MAIN WRAPPER */}
         <HomeLayout>

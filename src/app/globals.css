@@ -143,4 +143,7 @@ select option {
   color: #f3f4f6; /* gray-100 */
 }
 
+:root {
+  --header-space: 120px; /* Header + Marquee total height */
+}
 

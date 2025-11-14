@@ -33,15 +33,16 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-blue-200 text-slate-900">
       
-      {/* MOBILE MENU BUTTON */}
+      {/* █████ MOBILE MENU BUTTON (CSS auto spacing) █████ */}
       <button
-        className="md:hidden fixed top-20 left-4 z-50 bg-white p-2 rounded-lg shadow-md border"
+        className="md:hidden fixed left-4 z-50 bg-white p-2 rounded-lg shadow-md border border-slate-200 transition-all"
+        style={{ top: "var(--header-space)" }}  // 👈 CSS variable handles spacing
         onClick={() => setMobileOpen(true)}
       >
         <FiMenu size={22} className="text-blue-700" />
       </button>
 
-      {/* MOBILE SIDEBAR */}
+      {/* █████ MOBILE SIDEBAR █████ */}
       <aside
         className={`fixed top-0 left-0 h-screen bg-white w-72 border-r shadow-lg z-50 p-4 transform md:hidden transition-transform ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
@@ -73,7 +74,7 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
         </nav>
       </aside>
 
-      {/* DESKTOP SIDEBAR */}
+      {/* █████ DESKTOP SIDEBAR █████ */}
       <aside
         className={`hidden md:flex flex-col bg-white/80 border-r shadow-lg ${
           collapsed ? "w-20" : "w-72"
@@ -85,7 +86,7 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
             {!collapsed && <span className="font-bold text-blue-700">The XPosiGuide</span>}
           </div>
 
-          <button onClick={() => setCollapsed(!collapsed)}>
+        <button onClick={() => setCollapsed(!collapsed)}>
             {collapsed ? "›" : "‹"}
           </button>
         </div>
@@ -108,7 +109,7 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
         </nav>
       </aside>
 
-      {/* MAIN CONTENT */}
+      {/* █████ MAIN CONTENT █████ */}
       <main className="flex-1 px-6 lg:px-10 py-10 mx-auto max-w-5xl">
         {children}
       </main>
