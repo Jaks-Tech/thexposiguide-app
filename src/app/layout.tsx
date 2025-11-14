@@ -5,8 +5,9 @@ import type { Metadata } from "next";
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import Script from "next/script";
 import HomeLayout from "@/components/HomeLayout";
+import Script from "next/script";
+
 
 export const metadata: Metadata = {
   title: "The XPosiGuide",
@@ -17,10 +18,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-white text-neutral-900 flex flex-col">
+      {/* IMPORTANT: Body must NOT contain theme colors */}
+      <body className="min-h-screen flex flex-col">
 
-        {/* HEADER */}
-          {/* HEADER BLOCK (we measure this with CSS only) */}
+       
+          
           <div id="header-block">
             <Header />
 
@@ -31,18 +33,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
 
+          {/* All theme styles belong INSIDE HomeLayout */}
+          <HomeLayout>
+            <main className="flex-grow w-full">
+              {children}
+            </main>
+          </HomeLayout>
 
-        {/* MAIN WRAPPER */}
-        <HomeLayout>
-          <main className="flex-grow w-full">
-            {children}
-          </main>
-        </HomeLayout>
+          <Footer />
 
-        {/* FOOTER */}
-        <Footer />
-
-        {/* SCRIPTS */}
+        
         <Script id="mailerlite-universal" strategy="afterInteractive">
           {`
             (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[]).push(arguments);};
