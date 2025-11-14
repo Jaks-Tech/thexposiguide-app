@@ -1,7 +1,7 @@
 import Head from "next/head";
 import EntryCard from "@/components/EntryCard";
 import { listEntries, loadEntryPreview } from "@/lib/md";
-
+import ReturnToTop from "@/components/ReturnToTop";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -32,10 +32,10 @@ export default async function LowerExtremitiesPage() {
         <header className="text-center mb-10">
           <h1 className="text-4xl font-bold text-blue-600">Lower Extremities</h1>
           <p className="text-gray-600 mt-2">
-            Browse positioning guides for radiographic procedures of the lower limb.
+            Explore standardized radiographic positioning for lower-limb anatomy...
           </p>
         </header>
-
+        <ReturnToTop />
         {/* CONTENT OR EMPTY STATES */}
         {entriesWithPreview.length === 0 ? (
           <p className="text-center text-gray-500">No modules uploaded yet.</p>

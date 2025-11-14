@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-
+import AdminCard from "@/components/admin/AdminCard";
 export default function EditAnnouncementSection() {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
@@ -82,7 +82,7 @@ export default function EditAnnouncementSection() {
       <h2 className="text-xl font-semibold text-blue-700 mb-4 text-center border-b pb-2">
         ✏️ Edit Announcement
       </h2>
-
+      <AdminCard title="Edit Announcement">
       <form onSubmit={handleUpdate} className="space-y-4">
         {/* Select existing */}
         <div>
@@ -183,6 +183,7 @@ export default function EditAnnouncementSection() {
           </>
         )}
       </form>
+      </AdminCard>
 
       {status && (
         <p className="text-center mt-4 text-sm font-medium text-blue-600 animate-pulse">

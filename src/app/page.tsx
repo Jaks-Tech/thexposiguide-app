@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import GalleryImage from "@/components/GalleryImage";
 import AnnouncementsWidget from "@/components/AnnouncementsWidget";
+import ReturnToTop from "@/components/ReturnToTop";
 import ProTips from "@/components/ProTips";
 
 export default function HomePage() {
@@ -110,7 +111,7 @@ export default function HomePage() {
           }
         `}
       </style>
-
+ 
       {/* ⭐ HERO SECTION */}
       <section className="relative mb-16 reveal opacity-0">
         {/* Parallax soft glow background */}
@@ -390,6 +391,11 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+
+    {/*  Return to Top */}
+
+      <ReturnToTop />
 
       {/* ⭐ NEWSLETTER */}
       <section className="relative mt-20 mb-16 px-4 reveal opacity-0">

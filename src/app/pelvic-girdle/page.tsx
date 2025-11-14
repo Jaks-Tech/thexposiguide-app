@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 import EntryCard from "@/components/EntryCard";
 import type { EntryMeta } from "@/lib/md";
 import { loadEntryPreview } from "@/lib/md";
-
+import ReturnToTop from "@/components/ReturnToTop";
 export default function PelvicGirdlePage() {
   const [entries, setEntries] = useState<EntryMeta[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,10 +87,10 @@ export default function PelvicGirdlePage() {
         <header className="mb-10 text-center">
           <h1 className="text-4xl font-bold text-blue-600">Pelvic Girdle</h1>
           <p className="text-gray-600 mt-2">
-            Explore standardized X-ray positioning and projections.
+            Explore standardized radiographic positioning for pelvic and hip anatomy...
           </p>
         </header>
-
+        <ReturnToTop /> 
         {/* 🗂️ Content Section */}
         {entries.length === 0 ? (
           <p className="text-center text-gray-500">No modules uploaded yet.</p>

@@ -1,7 +1,7 @@
 import { listEntries, loadEntryPreview } from "@/lib/md";
 import EntryCard from "@/components/EntryCard";
 import Head from "next/head";
-
+import ReturnToTop from "@/components/ReturnToTop";
 export default async function UpperExtremitiesPage() {
   // Fetch metadata from uploads table
   const entries = await listEntries("upper");
@@ -28,10 +28,10 @@ export default async function UpperExtremitiesPage() {
         <header className="text-center mb-10">
           <h1 className="text-4xl font-bold text-blue-600">Upper Extremities</h1>
           <p className="text-gray-600 mt-2">
-            Browse positioning guides for radiographic procedures of the upper limb.
+            Explore standardized radiographic positioning for upper-limb anatomy...
           </p>
         </header>
-
+      <ReturnToTop />
         {entriesWithPreview.length === 0 ? (
           <p className="text-center text-gray-500">No modules uploaded yet.</p>
         ) : (
@@ -43,6 +43,7 @@ export default async function UpperExtremitiesPage() {
                 entry={entry}
                 subdir="upper"
               />
+              
             ))}
           </section>
         )}

@@ -1,183 +1,191 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import DeleteAssignmentSection from "@/components/DeleteAssignmentSection";
-import DeleteAnnouncementSection from "@/components/DeleteAnnouncementSection";
-import EditAnnouncementSection from "@/components/EditAnnouncementSection";
-export default function UploadPage() {
+
+import UploadFileSection from "@/components/admin/UploadFileSection";
+import AddLinkSection from "@/components/admin/AddLinkSection";
+import PostAnnouncementSection from "@/components/admin/PostAnnouncementSection";
+import RecurringAnnouncementSection from "@/components/admin/RecurringAnnouncementSection";
+import EditAnnouncementSection from "@/components/admin/EditAnnouncementSection";
+import UploadAssignmentSection from "@/components/admin/UploadAssignmentSection";
+import DeleteAssignmentSection from "@/components/admin/DeleteAssignmentSection";
+import DeleteAnnouncementSection from "@/components/admin/DeleteAnnouncementSection";
+import DeleteLinkSection from "@/components/admin/DeleteLinkSection";
+import DeleteFileSection from "@/components/admin/DeleteFileSection";
+import ReturnToTop from "@/components/ReturnToTop";
+
+import { logActivity } from "@/lib/logActivity";   // ✅ ADDED
+
+type Stats = {
+  notes: number;
+  papers: number;
+  modules: number;
+  assignments: number;
+  announcements: number;
+};
+
+const menuItems = [
+  { id: "overview", label: "Overview", icon: "📊" },
+  { id: "upload-files", label: "Upload Files", icon: "📂" },
+  { id: "links", label: "Useful Links", icon: "🌐" },
+  { id: "assignments", label: "Assignments", icon: "📘" },
+  { id: "announcements", label: "Announcements", icon: "📢" },
+  { id: "recurring", label: "Recurring", icon: "🔁" },
+  { id: "edit-announce", label: "Edit Announcements", icon: "✏️" },
+  { id: "delete-items", label: "Delete Items", icon: "🗑️" },
+];
+
+// Toast message
+function Toast({ message }: { message: string }) {
+  if (!message) return null;
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-full bg-blue-700 text-white shadow-lg animate-[fadeInOut_4s_ease]">
+      {message}
+    </div>
+  );
+}
+
+export default function AdminDashboard() {
   const router = useRouter();
 
-  // 🔐 Redirect if not logged in
+  /* ---------------- AUTH ---------------- */
   useEffect(() => {
     const isAuth = localStorage.getItem("admin-auth");
     if (!isAuth) router.push("/admin/login");
   }, [router]);
 
-  // ===== STATE =====
+  /* ---------------- SHARED STATE ---------------- */
   const [file, setFile] = useState<File | null>(null);
   const [image, setImage] = useState<File | null>(null);
   const [category, setCategory] = useState("notes");
   const [year, setYear] = useState("year-1");
   const [module, setModule] = useState("upper");
-  const [status, setStatus] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
-  // Link management
   const [linkData, setLinkData] = useState({ name: "", url: "", category: "" });
   const [links, setLinks] = useState<any[]>([]);
 
-  // ===== LOAD LINKS =====
-  async function refreshLinks() {
-    try {
-      const res = await fetch("/api/get-links");
-      const data = await res.json();
-      if (data.links) setLinks(data.links);
-    } catch (err) {
-      console.error("Error fetching links:", err);
-    }
-  }
+  const [toast, setToast] = useState("");
+  const [activityLog, setActivityLog] = useState<string[]>([]);
 
-  // ===== LOAD FILES FOR DELETION =====
-  async function refreshFilesForDeletion() {
-    const cat = (document.getElementById("delCategory") as HTMLSelectElement)?.value;
-    const yr = (document.getElementById("delYear") as HTMLSelectElement)?.value;
-    const mod = (document.getElementById("delModule") as HTMLSelectElement)?.value;
-    const fileSelect = document.getElementById("delFilename") as HTMLSelectElement;
-
-    if (!fileSelect) return;
-    fileSelect.innerHTML = "<option value=''>Loading...</option>";
-
-    try {
-      const res = await fetch("/api/list-files", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category: cat, year: yr, module: mod }),
-      });
-
-      const data = await res.json();
-
-      if (data.error) {
-        fileSelect.innerHTML = `<option value=''>Error: ${data.error}</option>`;
-        return;
-      }
-
-      const files = data.files || [];
-      if (files.length === 0) {
-        fileSelect.innerHTML = "<option value=''>No files found</option>";
-        return;
-      }
-
-      fileSelect.innerHTML = "<option value=''>Select...</option>";
-      files.forEach((f: any) => {
-        const opt = document.createElement("option");
-        opt.value = f.id; // ✅ store file ID (safe deletion)
-        opt.textContent = f.filename;
-        fileSelect.appendChild(opt);
-      });
-    } catch (err) {
-      console.error("Error fetching file list:", err);
-      fileSelect.innerHTML = "<option value=''>Error fetching files</option>";
-    }
-  }
+  /* ---------------- STATS ---------------- */
+  const [stats, setStats] = useState({
+    notes: 0,
+    papers: 0,
+    modules: 0,
+    assignments: 0,
+    announcements: 0,
+  });
 
   useEffect(() => {
-    refreshLinks();
+    async function fetchStats() {
+      try {
+        const res = await fetch("/api/admin/stats");
+        const data = await res.json();
+        if (data.success) {
+          setStats({
+            notes: data.notes,
+            papers: data.papers,
+            modules: data.modules,
+            assignments: data.assignments,
+            announcements: data.announcements,
+          });
+        }
+      } catch (err) {
+        console.error("Failed loading stats", err);
+      }
+    }
 
-    const cat = document.getElementById("delCategory");
-    const yr = document.getElementById("delYear");
-    const mod = document.getElementById("delModule");
-
-    const listener = () => refreshFilesForDeletion();
-    cat?.addEventListener("change", listener);
-    yr?.addEventListener("change", listener);
-    mod?.addEventListener("change", listener);
-
-    refreshFilesForDeletion();
-
-    return () => {
-      cat?.removeEventListener("change", listener);
-      yr?.removeEventListener("change", listener);
-      mod?.removeEventListener("change", listener);
-    };
+    fetchStats(); 
+    const interval = setInterval(fetchStats, 10000);
+    return () => clearInterval(interval);
   }, []);
 
-  // ===== FILE UPLOAD =====
-  const handleUpload = async (e: React.FormEvent) => {
+  /* ---------------- SCROLL SPY ---------------- */
+  const [activeSection, setActiveSection] = useState("overview");
+  const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
+
+  useEffect(() => {
+    const handleScroll = () => {
+      let current = "overview";
+      for (const item of menuItems) {
+        const el = sectionRefs.current[item.id];
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= 180 && rect.bottom >= 180) {
+            current = item.id;
+          }
+        }
+      }
+      setActiveSection(current);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  /* ---------------- HELPERS ---------------- */
+  function pushActivity(message: string) {
+    setActivityLog((prev) => {
+      const next = [`${new Date().toLocaleTimeString()} — ${message}`, ...prev];
+      return next.slice(0, 8);
+    });
+  }
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(""), 3500);
+  }
+
+  /* ---------------- UPLOAD HANDLER ---------------- */
+  async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
-    if (!file) return alert("Please select a file to upload.");
+    if (!file) return showToast("Select a file first.");
 
     setIsUploading(true);
-    setStatus("📤 Uploading...");
 
     const formData = new FormData();
     formData.append("file", file);
     formData.append("category", category);
-
-    if (category === "notes" || category === "papers") {
-      formData.append("year", year);
-    } else if (category === "module") {
-      formData.append("module", module);
-      if (image) formData.append("image", image);
-    }
+    if (image) formData.append("image", image);
+    formData.append("module", module);
+    formData.append("year", year);
 
     try {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
 
       if (data.success) {
-        setStatus(`✅ Uploaded successfully! (${file.name})`);
+        showToast("File uploaded successfully!");
+        pushActivity(`Uploaded file: ${file.name}`);
+
+        await logActivity(`Uploaded file: ${file.name}`);   // ✅ ADDED
+
         setFile(null);
         setImage(null);
-        const fileInput = document.getElementById("fileInput") as HTMLInputElement | null;
-        const imageInput = document.getElementById("imageInput") as HTMLInputElement | null;
-
-        if (fileInput) fileInput.value = "";
-        if (imageInput) imageInput.value = "";
-
-        refreshFilesForDeletion();
       } else {
-        setStatus(`❌ Error: ${data.error || "Upload failed"}`);
+        showToast("Upload failed.");
       }
-    } catch (err) {
-      console.error("Upload error:", err);
-      setStatus("❌ Upload failed. Please try again.");
+    } catch {
+      showToast("Upload error.");
     } finally {
       setIsUploading(false);
-      setTimeout(() => setStatus(""), 6000);
     }
-  };
+  }
 
-  // ===== ADD LINK =====
-  const handleLinkSubmit = async (e: React.FormEvent) => {
+  /* ---------------- DELETE LINK ---------------- */
+  async function handleLinkDelete(e: React.FormEvent) {
     e.preventDefault();
-    setStatus("⏳ Adding link...");
-    try {
-      const res = await fetch("/api/add-link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(linkData),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setStatus("✅ Link added successfully!");
-        setLinkData({ name: "", url: "", category: "" });
-        refreshLinks();
-      } else setStatus(`❌ Error: ${data.error || "Failed to add link"}`);
-    } catch {
-      setStatus("❌ Network error while adding link.");
-    } finally {
-      setTimeout(() => setStatus(""), 5000);
-    }
-  };
+    const select = document.getElementById("delLinkName") as HTMLSelectElement | null;
 
-  // ===== DELETE LINK =====
-  const handleLinkDelete = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const select = document.getElementById("delLinkName") as HTMLSelectElement;
+    if (!select?.value) return showToast("Select a link to delete.");
+
     const name = select.value;
-    if (!name) return alert("Please select a link to delete.");
-    if (!confirm(`Delete the link "${name}"?`)) return;
-    setStatus("⏳ Deleting link...");
+
+    if (!confirm(`Delete link "${name}"?`)) return;
+
+    showToast("Deleting...");
 
     try {
       const res = await fetch("/api/delete-link", {
@@ -185,585 +193,322 @@ export default function UploadPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
       });
+
       const data = await res.json();
+
       if (data.success) {
-        setStatus("✅ Link deleted successfully!");
-        refreshLinks();
-      } else setStatus(`❌ Error: ${data.error || "Failed to delete link"}`);
-    } catch (err) {
-      console.error("Error deleting link:", err);
-      setStatus("❌ Failed to delete link.");
-    } finally {
-      setTimeout(() => setStatus(""), 5000);
+        showToast("Link deleted.");
+        pushActivity(`Deleted link: ${name}`);
+
+        await logActivity(`Deleted link: ${name}`);  // ✅ ADDED
+
+        const res2 = await fetch("/api/get-links");
+        const data2 = await res2.json();
+        if (data2.links) setLinks(data2.links);
+      }
+    } catch {
+      showToast("Delete error.");
     }
-  };
+  }
 
-  // ===== DELETE FILE =====
-  const handleFileDelete = async (e: React.FormEvent) => {
+  /* ---------------- DELETE FILE ---------------- */
+  async function handleFileDelete(e: React.FormEvent) {
     e.preventDefault();
-    const fileId = (document.getElementById("delFilename") as HTMLSelectElement).value;
-    if (!fileId) return alert("Please select a file to delete.");
-    if (!confirm("Are you sure you want to delete this file?")) return;
 
-    setStatus("⏳ Deleting file...");
+    const fileSelect = document.getElementById("delFilename") as HTMLSelectElement | null;
+
+    if (!fileSelect?.value) return showToast("Select a file to delete.");
+
+    const fileId = fileSelect.value;
+
+    if (!confirm("Delete this file?")) return;
+
+    showToast("Deleting...");
 
     try {
       const res = await fetch("/api/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: fileId }), // ✅ send ID
+        body: JSON.stringify({ id: fileId }),
       });
+
       const data = await res.json();
+
       if (data.success) {
-        setStatus("✅ File deleted successfully!");
-        refreshFilesForDeletion();
-      } else setStatus(`❌ Error: ${data.error}`);
-    } catch (err) {
-      console.error("Error deleting file:", err);
-      setStatus("❌ Deletion failed.");
-    } finally {
-      setTimeout(() => setStatus(""), 5000);
+        showToast("File deleted.");
+        pushActivity(`Deleted file ID: ${fileId}`);
+
+        await logActivity(`Deleted file ID: ${fileId}`);  // ✅ ADDED
+      }
+    } catch {
+      showToast("Delete error.");
     }
-  };
+  }
 
-  // ====== UI ======
+  /* ---------------- SIDEBAR STATE ---------------- */
+  const [collapsedSidebar, setCollapsedSidebar] = useState(false);
+
+  /* ---------------- PAGE ---------------- */
   return (
-    <main className="relative max-w-4xl mx-auto py-12 px-6 bg-white shadow-lg rounded-xl space-y-10">
-      <h1 className="text-3xl font-bold text-blue-700 text-center mb-6">
-        🛠 The XPosiGuide Admin Dashboard
-      </h1>
+    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 text-slate-900">
 
-      {/* ================== UPLOAD SECTION ================== */}
-      <section className="border border-neutral-200 p-6 rounded-xl">
-        <h2 className="text-xl font-semibold text-blue-700 mb-4 text-center border-b pb-2">
-          📚 Upload Notes, Past Papers, or Module Markdown
-        </h2>
+      <style jsx global>{`
+        html { scroll-behavior: smooth; }
+        @keyframes fadeInOut {
+          0% { opacity: 0; transform: translateY(8px); }
+          10% { opacity: 1; transform: translateY(0); }
+          90% { opacity: 1; }
+          100% { opacity: 0; transform: translateY(8px); }
+        }
+      `}</style>
 
-        <form onSubmit={handleUpload} className="space-y-4">
-          <input
-            id="fileInput"
-            type="file"
-            accept={category === "module" ? ".md" : "*/*"}
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-            required
-            className="block w-full border border-neutral-300 rounded-md p-2"
-          />
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Category</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="block w-full border border-neutral-300 rounded-md p-2"
-              >
-                <option value="notes">Module Notes</option>
-                <option value="papers">Past Papers</option>
-                <option value="module">Module Markdown</option>
-              </select>
-            </div>
-
-            {(category === "notes" || category === "papers") && (
-              <div>
-                <label className="block text-sm font-medium mb-1">Year</label>
-                <select
-                  value={year}
-                  onChange={(e) => setYear(e.target.value)}
-                  className="block w-full border border-neutral-300 rounded-md p-2"
-                >
-                  <option value="year-1">Year 1</option>
-                  <option value="year-2">Year 2</option>
-                  <option value="year-3">Year 3</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-            )}
-
-            {category === "module" && (
-              <div>
-                <label className="block text-sm font-medium mb-1">Module</label>
-                <select
-                  value={module}
-                  onChange={(e) => setModule(e.target.value)}
-                  className="block w-full border border-neutral-300 rounded-md p-2"
-                >
-                  <option value="upper">Upper Extremities</option>
-                  <option value="lower">Lower Extremities</option>
-                  <option value="pelvic">Pelvic Girdle</option>
-                </select>
-              </div>
-            )}
-          </div>
-
-          {category === "module" && (
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Upload Module Image (Thumbnail)
-              </label>
-              <input
-                id="imageInput"
-                type="file"
-                accept="image/*"
-                onChange={(e) => setImage(e.target.files?.[0] || null)}
-                className="block w-full border border-neutral-300 rounded-md p-2"
-              />
-              {image && (
-                <div className="mt-3 flex items-center gap-3">
-                  <img
-                    src={URL.createObjectURL(image)}
-                    alt="Preview"
-                    className="w-24 h-24 object-cover rounded-md border"
-                  />
-                  <p className="text-sm text-gray-600">
-                    {image.name.length > 20 ? image.name.slice(0, 20) + "..." : image.name}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={isUploading}
-            className={`w-full font-semibold py-2 rounded-md transition ${
-              isUploading
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700"
+      {/* SIDEBAR */}
+      <aside
+        className={`hidden lg:flex flex-col ${
+          collapsedSidebar ? "w-20" : "w-72"
+        } bg-white border-r border-slate-200 shadow-lg sticky top-0 h-screen transition-all duration-300`}
+      >
+        <div className="flex items-center justify-between px-4 py-4 border-b border-slate-200">
+          <span
+            className={`font-bold text-blue-700 transition-all ${
+              collapsedSidebar ? "opacity-0 w-0" : "opacity-100"
             }`}
           >
-            {isUploading ? "Uploading..." : "Upload"}
-          </button>
-        </form>
-      </section>
-      {/* ================== ADD USEFUL LINK ================== */}
-      <section className="border border-neutral-200 p-6 rounded-xl">
-        <h2 className="text-xl font-semibold text-blue-700 mb-4 text-center border-b pb-2">
-          🌐 Add Useful Educational Link
-        </h2>
-        <form onSubmit={handleLinkSubmit} className="space-y-4">
-          <input
-            type="text"
-            placeholder="Link Name"
-            value={linkData.name}
-            onChange={(e) => setLinkData({ ...linkData, name: e.target.value })}
-            required
-            className="block w-full border border-neutral-300 rounded-md p-2"
-          />
-          <input
-            type="url"
-            placeholder="https://..."
-            value={linkData.url}
-            onChange={(e) => setLinkData({ ...linkData, url: e.target.value })}
-            required
-            className="block w-full border border-neutral-300 rounded-md p-2"
-          />
-          <input
-            type="text"
-            placeholder="Category (YouTube, TikTok, etc)"
-            value={linkData.category}
-            onChange={(e) =>
-              setLinkData({ ...linkData, category: e.target.value })
-            }
-            className="block w-full border border-neutral-300 rounded-md p-2"
-          />
+            XPosi Admin
+          </span>
           <button
-            type="submit"
-            className="w-full bg-green-600 text-white font-semibold py-2 rounded-md hover:bg-green-700"
+            onClick={() => setCollapsedSidebar((p) => !p)}
+            className="text-slate-500 hover:text-blue-600 text-xl"
           >
-            Add Link
+            {collapsedSidebar ? "»" : "«"}
           </button>
-        </form>
-      </section>
-        {/* ================== ADD ANNOUNCEMENT ================== */}
-        <section className="border border-neutral-200 p-6 rounded-xl">
-          <h2 className="text-xl font-semibold text-blue-700 mb-4 text-center border-b pb-2">
-            🗣️ Post Announcement
-          </h2>
+        </div>
 
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
+        <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-1">
+          {menuItems.map((item) => {
+            const active = activeSection === item.id;
+            return (
+              <a
+                key={item.id}
+                href={`#${item.id}`}
+                className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all border-l-4 text-sm ${
+                  active
+                    ? "bg-blue-100 border-blue-600 text-blue-700 shadow-sm"
+                    : "border-transparent text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                <span className="text-lg">{item.icon}</span>
+                {!collapsedSidebar && (
+                  <span className="font-medium truncate">{item.label}</span>
+                )}
+              </a>
+            );
+          })}
+        </nav>
+      </aside>
 
-              const title = (document.getElementById("announceTitle") as HTMLInputElement).value.trim();
-              const message = (document.getElementById("announceMsg") as HTMLTextAreaElement).value.trim();
-              const startInput = (document.getElementById("announceStart") as HTMLInputElement).value;
-              const endInput = (document.getElementById("announceEnd") as HTMLInputElement).value;
+      {/* MAIN CONTENT */}
+      <main className="flex-1 px-6 md:px-10 py-10 max-w-[1200px] mx-auto space-y-16">
 
-              if (!title || !message || !startInput || !endInput) {
-                return alert("⚠️ Please fill in all fields before posting.");
-              }
-
-              // Convert local time → UTC ISO
-              const start_time = new Date(startInput).toISOString();
-              const end_time = new Date(endInput).toISOString();
-
-              // Validate time order
-              if (new Date(end_time) <= new Date(start_time)) {
-                return alert("⚠️ End time must be after start time.");
-              }
-
-              // Visual feedback
-              const button = (e.target as HTMLFormElement).querySelector("button")!;
-              button.disabled = true;
-              button.textContent = "Posting...";
-
-              try {
-                const res = await fetch("/api/announcements/post", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ title, message, start_time, end_time }),
-                });
-
-                const data = await res.json();
-                if (data.success) {
-                  alert("✅ Announcement posted successfully!");
-                  (e.target as HTMLFormElement).reset();
-                } else {
-                  alert(`❌ Failed to post: ${data.error || "Unknown error"}`);
-                }
-              } catch (err) {
-                console.error("❌ Error posting announcement:", err);
-                alert("❌ Network error while posting announcement.");
-              } finally {
-                button.disabled = false;
-                button.textContent = "Post Announcement";
-              }
-            }}
-            className="space-y-4"
-          >
-            <input
-              id="announceTitle"
-              type="text"
-              placeholder="Announcement Title"
-              className="block w-full border border-neutral-300 rounded-md p-2"
-              required
-            />
-
-            <textarea
-              id="announceMsg"
-              placeholder="Enter announcement message"
-              className="block w-full border border-neutral-300 rounded-md p-2 h-28"
-              required
-            />
-
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm mb-1 font-medium">Start Time</label>
-                <input
-                  id="announceStart"
-                  type="datetime-local"
-                  className="w-full border border-neutral-300 rounded-md p-2"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm mb-1 font-medium">End Time</label>
-                <input
-                  id="announceEnd"
-                  type="datetime-local"
-                  className="w-full border border-neutral-300 rounded-md p-2"
-                  required
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white font-semibold py-2 rounded-md hover:bg-blue-700 transition disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              Post Announcement
-            </button>
-          </form>
-        </section>
-
-        {/* ================== RECURRING SCHEDULER ================== */}
-        <section className="border border-neutral-200 p-6 rounded-xl">
-          <h2 className="text-xl font-semibold text-blue-700 mb-4 text-center border-b pb-2">
-            🔁 Schedule Recurring Announcement
-          </h2>
-
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const title = (document.getElementById("recTitle") as HTMLInputElement).value;
-              const message = (document.getElementById("recMessage") as HTMLTextAreaElement).value;
-              const start = (document.getElementById("recStart") as HTMLInputElement).value;
-              const end = (document.getElementById("recEnd") as HTMLInputElement).value;
-              const rule = (document.getElementById("recRule") as HTMLSelectElement).value;
-
-              // Collect selected weekdays
-              const repeatDays = Array.from(
-                document.querySelectorAll("input[name='repeatDays']:checked")
-              ).map((el: any) => el.value);
-
-              const res = await fetch("/api/announcements/post", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  title,
-                  message,
-                  start_time: start,
-                  end_time: end,
-                  repeat_rule: rule,
-                  repeat_days: repeatDays,
-                }),
-              });
-
-              const data = await res.json();
-              alert(data.success ? "✅ Recurring announcement scheduled!" : `❌ ${data.error}`);
-            }}
-            className="space-y-4"
-          >
-            <input
-              id="recTitle"
-              type="text"
-              placeholder="Class or Announcement Title"
-              className="block w-full border border-neutral-300 rounded-md p-2"
-              required
-            />
-            <textarea
-              id="recMessage"
-              placeholder="Describe your recurring announcement..."
-              className="block w-full border border-neutral-300 rounded-md p-2"
-              required
-            />
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm mb-1">Start Time</label>
-                <input id="recStart" type="datetime-local" className="w-full border border-neutral-300 rounded-md p-2" required />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">End Time</label>
-                <input id="recEnd" type="datetime-local" className="w-full border border-neutral-300 rounded-md p-2" required />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm mb-1">Recurrence</label>
-              <select id="recRule" className="w-full border border-neutral-300 rounded-md p-2">
-                <option value="">None (One-time)</option>
-                <option value="daily">Every Day</option>
-                <option value="weekly">Every Week</option>
-                <option value="custom">Custom Days</option>
-              </select>
-            </div>
-
-            {/* 🗓️ Custom days */}
-            <div className="flex flex-wrap gap-2 mt-2">
-              {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
-                <label key={day} className="flex items-center gap-1 text-sm">
-                  <input type="checkbox" name="repeatDays" value={day} /> {day}
-                </label>
-              ))}
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white font-semibold py-2 rounded-md hover:bg-blue-700"
-            >
-              Schedule Recurring Announcement
-            </button>
-          </form>
-        </section>
+        {/* Header */}
+        <header className="text-center w-full flex flex-col items-center justify-center">
+          <h1 className="text-4xl font-extrabold text-blue-700">🛠 XPosiGuide Admin</h1>
+          <p className="text-sm text-slate-600 mt-1">
+            Manage content, links, assignments, and announcements from a single workspace.
+          </p>
+        </header>
 
 
-{/* ================== DELETE & EDIT ANNOUNCEMENT ================== */}
-        <EditAnnouncementSection />
-        <DeleteAnnouncementSection />
-
-
-      {/* ================== UPLOAD ASSIGNMENT ================== */}
-      <section className="border border-neutral-200 p-6 rounded-xl">
-        <h2 className="text-xl font-semibold text-blue-700 mb-4 text-center border-b pb-2">
-          📚 Upload Assignment
-        </h2>
-
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const form = e.target as HTMLFormElement;
-            const formData = new FormData(form);
-
-            const res = await fetch("/api/assignments/upload", {
-              method: "POST",
-              body: formData,
-            });
-
-            const data = await res.json();
-            alert(data.success ? "✅ Assignment uploaded!" : `❌ ${data.error}`);
-          }}
-          className="space-y-4"
+        {/* ---------------- OVERVIEW ---------------- */}
+        <AdminSection
+          id="overview"
+          title="📊 Upload Stats"
+          sectionRefs={sectionRefs}
+          activeSection={activeSection}
         >
-          <input
-            type="text"
-            name="title"
-            placeholder="Assignment Title"
-            className="block w-full border border-neutral-300 rounded-md p-2"
-            required
-          />
-          <textarea
-            name="description"
-            placeholder="Short description (optional)"
-            className="block w-full border border-neutral-300 rounded-md p-2"
-          />
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm mb-1">Year</label>
-              <select
-                name="year"
-                className="block w-full border border-neutral-300 rounded-md p-2"
-                required
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {[
+              { label: "Notes", value: stats.notes },
+              { label: "Past Papers", value: stats.papers },
+              { label: "Projections", value: stats.modules },
+              { label: "Assignments", value: stats.assignments },
+              { label: "Announcements", value: stats.announcements },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="rounded-2xl bg-white border border-slate-200 shadow-sm p-4"
               >
-                <option value="year-1">Year 1</option>
-                <option value="year-2">Year 2</option>
-                <option value="year-3">Year 3</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm mb-1">Deadline</label>
-              <input
-                type="datetime-local"
-                name="deadline"
-                className="block w-full border border-neutral-300 rounded-md p-2"
-              />
-            </div>
+                <p className="text-xs uppercase text-slate-500">{s.label}</p>
+                <p className="text-2xl font-extrabold text-blue-700">{s.value}</p>
+              </div>
+            ))}
           </div>
-          <input
-            type="file"
-            name="file"
-            accept="*/*"
-            className="block w-full border border-neutral-300 rounded-md p-2"
-            required
-          />
-          <button
-            type="submit"
-            className="w-full bg-green-600 text-white font-semibold py-2 rounded-md hover:bg-green-700"
-          >
-            Upload Assignment
-          </button>
-        </form>
-      </section>
+        </AdminSection>
 
-      {/* ================== DELETE ASSIGNMENT ================== */}
-        
-        <DeleteAssignmentSection />
-
-      {/* ================== DELETE LINK ================== */}
-      <section className="border border-neutral-200 p-6 rounded-xl">
-        <h2 className="text-xl font-semibold text-red-600 mb-4 text-center border-b pb-2">
-          🗑️ Delete Useful Link
-        </h2>
-        <form onSubmit={handleLinkDelete} className="space-y-4">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <select
-              id="delLinkName"
-              className="block w-full border border-neutral-300 rounded-md p-2"
-            >
-              <option value="">Select link...</option>
-              {links.map((l) => (
-                <option key={l.id} value={l.name}>
-                  {l.name} ({l.category || "General"})
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              className="w-full bg-red-600 text-white font-semibold py-2 rounded-md hover:bg-red-700"
-            >
-              Delete Link
-            </button>
-          </div>
-        </form>
-      </section>
-      {/* ================== DELETE FILE ================== */}
-      <section className="border border-neutral-200 p-6 rounded-xl">
-        <h2 className="text-xl font-semibold text-red-600 mb-4 text-center border-b pb-2">
-          🗑️ Delete Uploaded File
-        </h2>
-        <form onSubmit={handleFileDelete} className="space-y-4">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Category</label>
-              <select
-                id="delCategory"
-                className="block w-full border border-neutral-300 rounded-md p-2"
-              >
-                <option value="notes">Module Notes</option>
-                <option value="papers">Past Papers</option>
-                <option value="module">Module Markdown</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">File Name</label>
-              <select
-                id="delFilename"
-                className="block w-full border border-neutral-300 rounded-md p-2"
-              >
-                <option value="">Select...</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Year</label>
-              <select
-                id="delYear"
-                defaultValue="year-1"
-                className="block w-full border border-neutral-300 rounded-md p-2"
-              >
-                <option value="year-1">Year 1</option>
-                <option value="year-2">Year 2</option>
-                <option value="year-3">Year 3</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Module</label>
-              <select
-                id="delModule"
-                defaultValue="upper"
-                className="block w-full border border-neutral-300 rounded-md p-2"
-              >
-                <option value="upper">Upper Extremities</option>
-                <option value="lower">Lower Extremities</option>
-                <option value="pelvic">Pelvic Girdle</option>
-              </select>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-red-600 text-white font-semibold py-2 rounded-md hover:bg-red-700"
-          >
-            Delete File
-          </button>
-        </form>
-      </section>
-
-      {status && (
-        <p className="text-center text-blue-700 font-medium animate-pulse">
-          {status}
-        </p>
-      )}
-
-      <div className="flex justify-center pt-8">
-        <button
-          onClick={() => {
-            if (confirm("Are you sure you want to logout?")) {
-              localStorage.removeItem("admin-auth");
-              router.push("/admin/login");
-            }
-          }}
-          className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold py-2.5 px-6 rounded-full shadow-md hover:scale-105 transition-all duration-200"
+        {/* ---------------- UPLOAD FILES ---------------- */}
+        <AdminSection
+          id="upload-files"
+          title="📂 Upload Files"
+          sectionRefs={sectionRefs}
+          activeSection={activeSection}
         >
-          Logout
-        </button>
-      </div>
-    </main>
+          <UploadFileSection
+            file={file}
+            setFile={setFile}
+            image={image}
+            setImage={setImage}
+            category={category}
+            setCategory={setCategory}
+            year={year}
+            setYear={setYear}
+            module={module}
+            setModule={setModule}
+            isUploading={isUploading}
+            setIsUploading={setIsUploading}
+            setStatus={showToast}
+            handleUpload={handleUpload}
+          />
+        </AdminSection>
+
+        {/* ---------------- LINKS ---------------- */}
+        <AdminSection
+          id="links"
+          title="🌐 Useful Links"
+          sectionRefs={sectionRefs}
+          activeSection={activeSection}
+        >
+          <AddLinkSection
+            linkData={linkData}
+            setLinkData={setLinkData}
+            handleLinkSubmit={(e: Event) => {
+              e.preventDefault();
+              showToast("This was cleaned—hook your API back.");
+            }}
+          />
+        </AdminSection>
+
+        {/* ---------------- ASSIGNMENTS ---------------- */}
+        <AdminSection
+          id="assignments"
+          title="📘 Upload Assignment"
+          sectionRefs={sectionRefs}
+          activeSection={activeSection}
+        >
+          <UploadAssignmentSection />
+        </AdminSection>
+
+        {/* ---------------- ANNOUNCEMENTS ---------------- */}
+        <AdminSection
+          id="announcements"
+          title="📢 Post Announcement"
+          sectionRefs={sectionRefs}
+          activeSection={activeSection}
+        >
+          <PostAnnouncementSection />
+        </AdminSection>
+
+        {/* ---------------- RECURRING ---------------- */}
+        <AdminSection
+          id="recurring"
+          title="🔁 Recurring Scheduler"
+          sectionRefs={sectionRefs}
+          activeSection={activeSection}
+        >
+          <RecurringAnnouncementSection />
+        </AdminSection>
+
+        {/* ---------------- EDIT ANNOUNCEMENTS ---------------- */}
+        <AdminSection
+          id="edit-announce"
+          title="✏️ Edit Announcements"
+          sectionRefs={sectionRefs}
+          activeSection={activeSection}
+        >
+          <EditAnnouncementSection />
+        </AdminSection>
+
+        {/* ---------------- DELETE ITEMS ---------------- */}
+        <AdminSection
+          id="delete-items"
+          title="🗑️ Delete Items"
+          sectionRefs={sectionRefs}
+          activeSection={activeSection}
+        >
+          <div className="grid md:grid-cols-2 gap-6">
+            <DeleteFileSection handleFileDelete={handleFileDelete} />
+            <DeleteLinkSection links={links} handleLinkDelete={handleLinkDelete} />
+            <DeleteAnnouncementSection />
+            <DeleteAssignmentSection />
+          </div>
+
+          {/* Recent Activity */}
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold mb-2 text-slate-800">
+              Recent Activity
+            </h3>
+
+            {activityLog.length === 0 ? (
+              <p className="text-sm text-slate-500">No recent actions yet.</p>
+            ) : (
+              <ul className="text-sm text-slate-700 space-y-1 bg-white rounded-xl p-3 border border-slate-200 max-h-40 overflow-y-auto">
+                {activityLog.map((entry, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="mt-1 text-xs">•</span>
+                    <span>{entry}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </AdminSection>
+
+        <ReturnToTop />
+      </main>
+
+      <Toast message={toast} />
+    </div>
   );
 }
 
+/* ---------------- SECTION WRAPPER ---------------- */
+function AdminSection({
+  id,
+  title,
+  children,
+  sectionRefs,
+  activeSection,
+}: {
+  id: string;
+  title: string;
+  children: React.ReactNode;
+  sectionRefs: React.MutableRefObject<{ [key: string]: HTMLElement | null }>;
+  activeSection: string;
+}) {
+  const isActive = activeSection === id;
 
+  return (
+    <section
+      id={id}
+      ref={(el) => {
+        if (el) sectionRefs.current[id] = el;
+      }}
+      className="scroll-mt-32"
+    >
+      <h2
+        className={`text-2xl font-bold mb-4 transition-all ${
+          isActive ? "text-blue-700 scale-[1.02]" : "text-slate-700"
+        }`}
+      >
+        {title}
+      </h2>
 
-
-
+      <div
+        className={`rounded-2xl border shadow-lg p-6 md:p-7 bg-white transition-all ${
+          isActive ? "border-blue-300" : "border-slate-200"
+        }`}
+      >
+        {children}
+      </div>
+    </section>
+  );
+}

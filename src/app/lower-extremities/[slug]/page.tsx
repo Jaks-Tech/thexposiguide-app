@@ -8,7 +8,7 @@ import ReadAloud from "@/components/ReadAloud";
 import BackButton from "@/components/BackButton";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
+import ReturnToTop from "@/components/ReturnToTop";
 /** 🧠 Generate SEO metadata dynamically */
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -91,6 +91,7 @@ export default async function LowerEntryPage({ params }: { params: Promise<{ slu
 
       <ReadAloud title={title} html={htmlContent} />
       <BackButton href="/lower-extremities" />
+      <ReturnToTop />
 
       <article className="prose dark:prose-invert">
         <div dangerouslySetInnerHTML={{ __html: htmlContent }} />

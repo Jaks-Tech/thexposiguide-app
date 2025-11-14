@@ -6,7 +6,7 @@ import html from "remark-html";
 import Image from "next/image";
 import ReadAloud from "@/components/ReadAloud";
 import BackButton from "@/components/BackButton";
-
+import ReturnToTop from "@/components/ReturnToTop";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -89,7 +89,7 @@ export default async function UpperEntryPage({ params }: { params: Promise<{ slu
         />
       </div>
      
-
+      <ReturnToTop />
       <ReadAloud title={title} html={htmlContent} />
       <BackButton href="/upper-extremities" />
 

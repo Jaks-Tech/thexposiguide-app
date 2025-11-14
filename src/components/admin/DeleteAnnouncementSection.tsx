@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-
+import AdminCard from "@/components/admin/AdminCard";
 export default function DeleteAnnouncementSection() {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [selectedId, setSelectedId] = useState("");
@@ -61,6 +61,7 @@ export default function DeleteAnnouncementSection() {
       <h2 className="text-xl font-semibold text-red-600 mb-4 text-center border-b pb-2">
         🗑️ Delete Announcement
       </h2>
+      <AdminCard title="Announcements">
 
       <form onSubmit={handleDelete} className="space-y-4">
         <div>
@@ -97,7 +98,7 @@ export default function DeleteAnnouncementSection() {
           Delete Announcement
         </button>
       </form>
-
+      </AdminCard>
       {status && (
         <p className="text-center mt-4 text-sm font-medium text-blue-600 animate-pulse">
           {status}

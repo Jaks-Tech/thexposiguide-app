@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import AdminCard from "./AdminCard";
 
 export default function DeleteAssignmentSection() {
   const [assignments, setAssignments] = useState<any[]>([]);
@@ -45,6 +46,8 @@ export default function DeleteAssignmentSection() {
         🗑️ Delete Assignment
       </h2>
 
+      <AdminCard title="Delete Assignment">
+
       <form onSubmit={handleDelete} className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">
@@ -77,6 +80,7 @@ export default function DeleteAssignmentSection() {
           Delete Assignment
         </button>
       </form>
+      </AdminCard>
     </section>
   );
 }
