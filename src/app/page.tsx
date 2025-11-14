@@ -180,7 +180,7 @@ export default function HomePage() {
             {
               href: "/pelvic-girdle",
               img: "/assets/pelvic_girdle.png",
-              title: "Pelvic Girdle",
+              title: "Pelvic Girdle/Vertebral Column",
               text: "Pelvis & hip projections including AP pelvis, inlet/outlet, frog-leg views.",
             },
             {

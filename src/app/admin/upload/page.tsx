@@ -370,22 +370,44 @@ export default function AdminDashboard() {
           />
         </AdminSection>
 
-        {/* ---------------- LINKS ---------------- */}
-        <AdminSection
-          id="links"
-          title="🌐 Useful Links"
-          sectionRefs={sectionRefs}
-          activeSection={activeSection}
-        >
           <AddLinkSection
             linkData={linkData}
             setLinkData={setLinkData}
-            handleLinkSubmit={(e: Event) => {
+            handleLinkSubmit={async (e: React.FormEvent) => {
               e.preventDefault();
-              showToast("This was cleaned—hook your API back.");
+
+              try {
+                const res = await fetch("/api/add-link", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(linkData),
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                  showToast("Link added successfully! ✅");
+
+                  // reset input fields
+                  setLinkData({ name: "", url: "", category: "" });
+
+                  // log activity
+                  await logActivity(`Added link: ${linkData.name}`);
+
+                  // update dropdowns
+                  const res2 = await fetch("/api/get-links");
+                  const data2 = await res2.json();
+                  if (data2.links) setLinks(data2.links);
+                } else {
+                  showToast(`Error: ${data.error}`);
+                }
+              } catch (err) {
+                console.error(err);
+                showToast("Network error while adding link ❌");
+              }
             }}
           />
-        </AdminSection>
+
 
         {/* ---------------- ASSIGNMENTS ---------------- */}
         <AdminSection

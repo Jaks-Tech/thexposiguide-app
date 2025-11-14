@@ -16,7 +16,7 @@ export default function Header() {
     { name: "Home", href: "/" },
     { name: "Upper Extremities", href: "/upper-extremities" },
     { name: "Lower Extremities", href: "/lower-extremities" },
-    { name: "Pelvic Girdle", href: "/pelvic-girdle" },
+    { name: "Pelvic Girdle/Vertebral Column", href: "/pelvic-girdle" },
     { name: "XPosiLearn", href: "/xposilearn" },
     { name: "XPosi AI", href: "/xposi-ai" },
   ];

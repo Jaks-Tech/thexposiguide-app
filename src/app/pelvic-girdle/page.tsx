@@ -85,7 +85,7 @@ export default function PelvicGirdlePage() {
       <main className="mx-auto max-w-6xl px-4 py-10">
         {/* 🩻 Header */}
         <header className="mb-10 text-center">
-          <h1 className="text-4xl font-bold text-blue-600">Pelvic Girdle</h1>
+          <h1 className="text-4xl font-bold text-blue-600">Pelvic Girdle/Vertebral Column</h1>
           <p className="text-gray-600 mt-2">
             Explore standardized radiographic positioning for pelvic and hip anatomy...
           </p>
