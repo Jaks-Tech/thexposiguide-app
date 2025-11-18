@@ -169,31 +169,31 @@ export default function HomePage() {
           </div>
         </section>
 
-{/* -------------------------------------------------- */}
-{/* 2️⃣ CIRCULAR ROADMAP — BLUE SECTION */}
-{/* -------------------------------------------------- */}
-<section className="w-full py-24 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 text-white mt-20">
+        {/* -------------------------------------------------- */}
+        {/* 2️⃣ CIRCULAR ROADMAP — BLUE SECTION */}
+        {/* -------------------------------------------------- */}
+        <section className="w-full py-24 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 text-white mt-20">
 
-  <div className="max-w-6xl mx-auto px-6 text-center">
+          <div className="max-w-6xl mx-auto px-6 text-center">
 
-    {/* Title */}
-    <h2 className="text-3xl sm:text-4xl font-bold mb-10 drop-shadow-lg">
-      Your Radiography Learning Roadmap
-    </h2>
+            {/* Title */}
+            <h2 className="text-3xl sm:text-4xl font-bold mb-10 drop-shadow-lg">
+              Your Radiography Learning Roadmap
+            </h2>
 
-    {/* Subtitle */}
-    <p className="text-white/80 max-w-2xl mx-auto text-lg mb-16">
-      A smooth guided pathway through all modules, projections, learning tools, 
-      and AI assistance — designed to build strong diagnostic confidence.
-    </p>
+            {/* Subtitle */}
+            <p className="text-white/80 max-w-2xl mx-auto text-lg mb-16">
+              A smooth guided pathway through all modules, projections, learning tools, 
+              and AI assistance — designed to build strong diagnostic confidence.
+            </p>
 
-    {/* Circular Roadmap */}
-    <div className="flex justify-center">
-      <CircularRoadmap />
-    </div>
-  </div>
+            {/* Circular Roadmap */}
+            <div className="flex justify-center">
+              <CircularRoadmap />
+            </div>
+          </div>
 
-</section>
+        </section>
 
 
 

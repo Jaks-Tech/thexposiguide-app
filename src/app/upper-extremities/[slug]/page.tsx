@@ -7,10 +7,18 @@ import Image from "next/image";
 import ReadAloud from "@/components/ReadAloud";
 import BackButton from "@/components/BackButton";
 import ReturnToTop from "@/components/ReturnToTop";
+
+// ✅ Import the external client wrapper (NO useState inside this file)
+import PracticeQuizClientWrapper from "@/components/practice-mode/PracticeQuizClientWrapper";
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const { slug } = await params;
 
   const { data: entry, error } = await supabaseAdmin
@@ -25,17 +33,27 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   const title = entry.filename.replace(/\.[^/.]+$/, "");
   const image = entry.image_url || "/assets/placeholder.png";
-  const description = entry.description || "Upper Extremities X-ray positioning guide.";
+  const description =
+    entry.description || "Upper Extremities X-ray positioning guide.";
 
   return {
     title: `${title} — Upper Extremities`,
     description,
     openGraph: { title, description, images: [{ url: image }] },
-    twitter: { card: "summary_large_image", title, description, images: [image] },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
   };
 }
 
-export default async function UpperEntryPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function UpperEntryPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const { slug } = await params;
 
   const { data: entry, error } = await supabaseAdmin
@@ -61,7 +79,11 @@ export default async function UpperEntryPage({ params }: { params: Promise<{ slu
   }
 
   const text = await fileData.text();
+
+  // Extract markdown frontmatter + content
   const { content, data: fm } = matter(text);
+
+  // Convert markdown to HTML
   const processed = await remark().use(html).process(content);
   const htmlContent = processed.toString();
 
@@ -69,12 +91,16 @@ export default async function UpperEntryPage({ params }: { params: Promise<{ slu
     fm.title ||
     entry.filename.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
   const description =
-    fm.description || entry.description || "Upper Extremities X-ray positioning guide.";
+    fm.description ||
+    entry.description ||
+    "Upper Extremities X-ray positioning guide.";
 
   return (
     <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       <header className="mb-6 text-center">
-        <h1 className="text-3xl sm:text-4xl font-bold text-blue-600">{title}</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-blue-600">
+          {title}
+        </h1>
         <p className="mt-2 text-gray-600">{description}</p>
       </header>
 
@@ -88,14 +114,21 @@ export default async function UpperEntryPage({ params }: { params: Promise<{ slu
           priority
         />
       </div>
-     
+
       <ReturnToTop />
+
       <ReadAloud title={title} html={htmlContent} />
+
       <BackButton href="/upper-extremities" />
 
-      <article className="prose dark:prose-invert">
+      <article className="prose dark:prose-invert mt-6">
         <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
       </article>
+
+      {/* =========================================== */}
+      {/*         AI Practice Mode Integration        */}
+      {/* =========================================== */}
+      <PracticeQuizClientWrapper content={content} />
     </main>
   );
 }
