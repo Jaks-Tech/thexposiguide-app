@@ -7,7 +7,7 @@ import GalleryImage from "@/components/GalleryImage";
 import AnnouncementsWidget from "@/components/AnnouncementsWidget";
 import ReturnToTop from "@/components/ReturnToTop";
 import ProTips from "@/components/ProTips";
-
+import CircularRoadmap from "@/components/CircularRoadmap";
 export default function HomePage() {
   const heroBgRef = useRef<HTMLDivElement | null>(null);
 
@@ -119,12 +119,14 @@ export default function HomePage() {
               <p className="text-neutral-700 text-lg sm:text-xl mt-6 max-w-2xl mx-auto">
                 A clear, modern radiographic guide that connects every module, projection, tool, and AI feature you need to learn with confidence.
               </p>
+             
 
               {/* MOTTO */}
               <p className="mt-6 text-blue-500 font-semibold text-xl tracking-wide">
                 Position ∘ Expose ∘ Diagnose
               </p>
 
+           
               {/* FEATURE BULLETS */}
               <div className="grid sm:grid-cols-2 gap-4 mt-10 max-w-3xl mx-auto text-left">
 
@@ -167,100 +169,33 @@ export default function HomePage() {
           </div>
         </section>
 
-      {/* -------------------------------------------------- */}
-      {/* 2️⃣ MODULES — SOFT BLUE GRADIENT */}
-      {/* -------------------------------------------------- */}
-      {/* UPDATED: Lighter, softer blue gradient */}
-      <section className="w-full py-24 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white">
-        <div className="max-w-[1700px] mx-auto px-6 reveal opacity-0">
+{/* -------------------------------------------------- */}
+{/* 2️⃣ CIRCULAR ROADMAP — BLUE SECTION */}
+{/* -------------------------------------------------- */}
+<section className="w-full py-24 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 text-white mt-20">
 
-          <h2 className="text-3xl sm:text-4xl font-bold mb-12 text-center">
-            Explore Modules
-          </h2>
+  <div className="max-w-6xl mx-auto px-6 text-center">
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-8">
-            {[
-              {
-                href: "/upper-extremities",
-                img: "/assets/upper-extremities.png",
-                title: "Upper Extremities",
-                text: "Hand, wrist, elbow, humerus, and shoulder projections with positioning guidelines.",
-                extra: "Includes PA, AP, oblique, lateral and specialty trauma views."
-              },
-              {
-                href: "/lower-extremities",
-                img: "/assets/lower-extremities.png",
-                title: "Lower Extremities",
-                text: "Foot, ankle, tibia/fibula, knee, and femur projections for accurate radiography.",
-                extra: "Covers weight-bearing views, tunnel views, and rotational checks."
-              },
-              {
-                href: "/pelvic-girdle",
-                img: "/assets/pelvic_girdle.png",
-                title: "Pelvic Girdle",
-                text: "Pelvis, hip, spine, inlet/outlet & frog-leg projections with anatomy overlays.",
-                extra: "Learn trauma protocols, femoral neck checks, and AP/Lat spine techniques."
-              },
-              {
-                href: "/xposilearn",
-                img: "/assets/xposilearn.png",
-                title: "XPosiLearn",
-                text: "Study hub with notes, past exam papers, anatomy breakdowns, and quick guides.",
-                extra: "Structured lessons and visual memory tools for exam preparation."
-              },
-              {
-                href: "/xposi-ai",
-                img: "/assets/xposi-ai.png",
-                title: "XPosi AI",
-                text: "AI-powered radiography assistant for explaining projections and anatomy.",
-                extra: "Ask questions, get walkthroughs, and improve radiographic reasoning."
-              },
-            ].map((card, i) => (
-              <Link
-                key={i}
-                href={card.href}
-                onMouseMove={handleTiltMove}
-                onMouseLeave={handleTiltLeave}
-                className="
-                  group bg-white text-left rounded-2xl overflow-hidden 
-                  shadow-xl hover:shadow-2xl transition transform 
-                  reveal opacity-0 h-full flex flex-col
-                "
-                style={{ animationDelay: `${i * 0.12}s` }}
-              >
-                {/* IMAGE */}
-                <div className="relative aspect-[4/3] bg-gray-50">
-                  <Image
-                    src={card.img}
-                    alt={card.title}
-                    fill
-                    className="object-contain p-6 transition-transform duration-500 group-hover:scale-110"
-                  />
-                </div>
+    {/* Title */}
+    <h2 className="text-3xl sm:text-4xl font-bold mb-10 drop-shadow-lg">
+      Your Radiography Learning Roadmap
+    </h2>
 
-                {/* TEXT CONTENT */}
-                <div className="p-6 flex-grow">
-                  <h3 className="text-lg font-bold text-blue-600">{card.title}</h3>
-                  <p className="text-neutral-700 text-sm mt-2 leading-relaxed">
-                    {card.text}
-                  </p>
+    {/* Subtitle */}
+    <p className="text-white/80 max-w-2xl mx-auto text-lg mb-16">
+      A smooth guided pathway through all modules, projections, learning tools, 
+      and AI assistance — designed to build strong diagnostic confidence.
+    </p>
 
-                  <p className="text-neutral-600 text-xs mt-3 opacity-90">
-                    {card.extra}
-                  </p>
-                </div>
+    {/* Circular Roadmap */}
+    <div className="flex justify-center">
+      <CircularRoadmap />
+    </div>
+  </div>
 
-                {/* EXPLORE LINK */}
-                <div className="px-6 pb-6 mt-auto">
-                  <div className="flex items-center text-blue-600 font-semibold text-sm group-hover:underline">
-                    Explore <span className="ml-1">→</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+</section>
+
+
 
       {/* -------------------------------------------------- */}
       {/* 3️⃣ ANNOUNCEMENTS — WHITE */}
