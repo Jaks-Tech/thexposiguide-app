@@ -108,25 +108,6 @@ export default function Header() {
               </Link>
             )}
 
-            {/* If no user: show Login/Signup */}
-            {!user && (
-              <>
-                <Link
-                  href="/auth/login"
-                  className="text-sm font-medium px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20"
-                >
-                  Login
-                </Link>
-
-                <Link
-                  href="/auth/signup"
-                  className="text-sm font-medium px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Sign Up
-                </Link>
-              </>
-            )}
-
             {/* DROPDOWN MENU BUTTON */}
             <div className="relative" ref={dropdownRef}>
               <button
