@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-
 import UploadFileSection from "@/components/admin/UploadFileSection";
 import AddLinkSection from "@/components/admin/AddLinkSection";
 import PostAnnouncementSection from "@/components/admin/PostAnnouncementSection";
@@ -13,6 +12,7 @@ import DeleteAssignmentSection from "@/components/admin/DeleteAssignmentSection"
 import DeleteAnnouncementSection from "@/components/admin/DeleteAnnouncementSection";
 import DeleteLinkSection from "@/components/admin/DeleteLinkSection";
 import DeleteFileSection from "@/components/admin/DeleteFileSection";
+import Logout from "@/components/admin/Logout";
 import ReturnToTop from "@/components/ReturnToTop";
 
 import { logActivity } from "@/lib/logActivity";   // ✅ ADDED
@@ -482,12 +482,18 @@ export default function AdminDashboard() {
               </ul>
             )}
           </div>
+        {/* LOGOUT BUTTON BELOW RECENT ACTIVITY */}
+        <div className="mt-6">
+          <Logout/>
+        </div>
         </AdminSection>
 
         <ReturnToTop />
+        
       </main>
 
       <Toast message={toast} />
+      
     </div>
   );
 }

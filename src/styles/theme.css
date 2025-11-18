@@ -1,56 +1,168 @@
-/* ===========================
-   TheXPosiGuide Global Theme
-   =========================== */
+/* ===============================
+   ✨ TheXPosiGuide Global Theme v2
+   Polished medical/educational UI
+   Soft, clean, premium aesthetic
+   =============================== */
 
 :root {
-  --color-bg: #ffffff; /* pure white background */
-  --color-text: #1e293b; /* dark gray text */
-  --color-primary: #2563eb; /* blue accent */
-  --color-accent: #38bdf8; /* light blue highlight */
-  --color-border: #e2e8f0; /* soft border */
+  /* 🎨 Core Colors */
+  --color-bg: #f9fbff; /* very soft blue-white */
+  --color-bg-card: #ffffff;
+  --color-text: #1e293b; /* slate-800 */
+  --color-text-muted: #64748b; /* slate-500 */
+
+  --color-primary: #2563eb; /* blue-600 */
+  --color-primary-light: #3b82f6; /* blue-500 */
+  --color-primary-soft: #eff6ff; /* blue-50 */
+
+  --color-accent: #38bdf8; /* sky-400 */
+  --color-accent-soft: #e0f7ff;
+
+  --color-border: #e2e8f0; /* slate-200 */
+  --color-border-soft: #f1f5f9;
+
+  /* ✨ Shadows */
+  --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.06);
+  --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-strong: 0 10px 30px rgba(0, 0, 0, 0.12);
+
+  /* 💨 Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-medium: 0.25s ease;
+
+  /* 🎨 Gradients */
+  --gradient-soft: linear-gradient(
+    135deg,
+    #e0f2fe,
+    #eff6ff,
+    #e0f7ff
+  );
+
+  --gradient-primary: linear-gradient(
+    120deg,
+    #2563eb,
+    #3b82f6,
+    #38bdf8
+  );
+
+  --gradient-card: linear-gradient(
+    145deg,
+    #ffffff,
+    #f8fbff
+  );
+
+  /* ⚙️ Radius */
+  --radius: 14px;
+  --radius-lg: 22px;
 }
 
-/* Apply colors globally */
+/* ======================
+   🌐 Base Page Styling
+   ====================== */
 body {
   background: var(--color-bg);
   color: var(--color-text);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
-    sans-serif;
-  transition: background 0.3s ease, color 0.3s ease;
+  font-family: "Inter", system-ui, sans-serif;
+  line-height: 1.6;
+  transition: background var(--transition-medium), color var(--transition-medium);
 }
 
-/* ✨ Gradient helper class */
-.gradient-bg {
-  background: linear-gradient(
-    135deg,
-    var(--gradient-start),
-    var(--gradient-mid),
-    var(--gradient-end)
-  );
+a {
+  text-decoration: none;
+  transition: color var(--transition-fast), background var(--transition-fast);
 }
 
-/* 💙 Text utility classes */
-.text-primary {
-  color: var(--color-primary);
+/* ======================
+   💠 UI Elements
+   ====================== */
+
+/* 🧊 Modern Card */
+.card,
+.admin-card,
+.bg-card {
+  background: var(--gradient-card);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-soft);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.text-accent {
-  color: var(--color-accent);
+.card:hover,
+.admin-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-medium);
 }
 
-/* 💎 Background utility classes */
-.bg-primary {
-  background-color: var(--color-primary);
+/* 🟦 Primary Buttons */
+.btn-primary {
+  background: var(--gradient-primary);
   color: white;
+  padding: 0.65rem 1.2rem;
+  border-radius: var(--radius);
+  font-weight: 600;
+  transition: var(--transition-medium);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
 }
 
-.bg-accent {
-  background-color: var(--color-accent);
-  color: white;
+.btn-primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
 }
 
-/* 🩻 Border helper */
-.border-default {
-  border-color: var(--color-border);
+/* 🔵 Soft-focus Inputs */
+input,
+select,
+textarea {
+  background: white;
+  border: 1px solid var(--color-border);
+  padding: 0.6rem;
+  border-radius: var(--radius);
+  transition: var(--transition-fast);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* ============================
+   ⭐ Utility (quick helpers)
+   ============================ */
+
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+.bg-soft {
+  background: var(--color-primary-soft);
+}
+
+.bg-accent-soft {
+  background: var(--color-accent-soft);
+}
+
+/* Beautiful divider line */
+.hr-soft {
+  border-bottom: 1px solid var(--color-border);
+  opacity: 0.7;
+}
+
+/* Animation */
+.fade-in {
+  animation: fadeIn 0.4s ease both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
