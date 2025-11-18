@@ -4,17 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
-import {
-  FiMenu,
-  FiChevronDown,
-} from "react-icons/fi";
+import { FiMenu, FiChevronDown } from "react-icons/fi";
 
-// 🎨 COLORED ICONS
-import { MdHome } from "react-icons/md";
-import { MdMenuBook } from "react-icons/md";
+import { MdHome, MdMenuBook } from "react-icons/md";
 import { PiRobotBold } from "react-icons/pi";
 import { GiHand, GiLeg, GiPelvisBone } from "react-icons/gi";
+import { FaUserCircle } from "react-icons/fa";
 
 export default function Header() {
   const pathname = usePathname();
@@ -22,7 +19,18 @@ export default function Header() {
   const [modulesOpen, setModulesOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-  // 🔵 MODULE SUB-LINKS
+  const [user, setUser] = useState<any>(null);
+
+  // 🔹 Load Supabase Auth User
+  useEffect(() => {
+    const loadUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
+    };
+    loadUser();
+  }, []);
+
+  // 🔹 MODULE LINKS
   const moduleLinks = [
     {
       name: "Upper Extremities",
@@ -41,7 +49,6 @@ export default function Header() {
     },
   ];
 
-  // 🔵 TOP LINKS — **ORDER UPDATED**
   const topLinks = [
     {
       name: "Home",
@@ -52,14 +59,14 @@ export default function Header() {
 
   // Close dropdown
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
+    function handleClickOutside(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setOpen(false);
         setModulesOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Close menu on route change
@@ -85,113 +92,138 @@ export default function Header() {
             <span className="text-lg font-bold tracking-wide">The XPosiGuide</span>
           </Link>
 
-          {/* RIGHT: Menu Button */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setOpen(!open)}
-              className="p-2 rounded-full hover:bg-white/10 transition"
-            >
-              <FiMenu size={24} />
-            </button>
+          {/* RIGHT SIDE: PROFILE + MENU */}
+          <div className="flex items-center gap-4">
 
-            {/* ▼ DROPDOWN MENU ▼ */}
-            {open && (
-              <div className="
-                absolute right-0 mt-3 w-72 bg-white text-slate-800 shadow-xl 
-                rounded-xl border border-slate-200 py-2
-                animate-[fadeIn_0.2s_ease-out]
-              ">
-
-                {/* HOME FIRST */}
-                {topLinks.map((item) => {
-                  const active = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`
-                        flex items-center gap-3 px-4 py-2 text-sm rounded-lg
-                        transition-all cursor-pointer
-                        ${active ? "bg-blue-100 text-blue-700 font-semibold" : "hover:bg-blue-50"}
-                      `}
-                    >
-                      {item.icon}
-                      {item.name}
-                    </Link>
-                  );
-                })}
-
-                {/* ---------------------------- */}
-                {/* ➤ EXPLORE PROJECTIONS SECOND */}
-                {/* ---------------------------- */}
-                <button
-                  onClick={() => setModulesOpen(!modulesOpen)}
-                  className="
-                    flex items-center justify-between w-full
-                    px-4 py-2 mt-1 mb-1 text-sm rounded-lg
-                    hover:bg-blue-50 transition
-                  "
-                >
-                  <div className="flex items-center gap-3">
-                    <GiPelvisBone size={20} className="text-blue-700" />
-                    Explore Projections
-                  </div>
-                  <FiChevronDown
-                    className={`transition-transform ${modulesOpen ? "rotate-180" : ""}`}
-                  />
-                </button>
-
-                {modulesOpen && (
-                  <div className="pl-8 pr-4 py-1 space-y-1 animate-[fadeIn_0.2s_ease-out]">
-                    {moduleLinks.map((item) => {
-                      const active = pathname === item.href;
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className={`
-                            flex items-center gap-2 px-3 py-1.5 text-sm rounded-md
-                            ${active ? "bg-blue-100 text-blue-700 font-semibold" : "hover:bg-blue-50"}
-                          `}
-                        >
-                          {item.icon}
-                          {item.name}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* --------------------------- */}
-                {/* ➤ XPosiLearn THIRD */}
-                {/* --------------------------- */}
-                <Link
-                  href="/xposilearn"
-                  className={`
-                    flex items-center gap-3 px-4 py-2 text-sm rounded-lg mt-1
-                    ${pathname === "/xposilearn" ? "bg-blue-100 text-blue-700 font-semibold" : "hover:bg-blue-50"}
-                  `}
-                >
-                  <MdMenuBook size={20} className="text-indigo-600" />
-                  XPosiLearn
-                </Link>
-
-                {/* --------------------------- */}
-                {/* ➤ XPosi AI FOURTH */}
-                {/* --------------------------- */}
-                <Link
-                  href="/xposi-ai"
-                  className={`
-                    flex items-center gap-3 px-4 py-2 text-sm rounded-lg
-                    ${pathname === "/xposi-ai" ? "bg-blue-100 text-blue-700 font-semibold" : "hover:bg-blue-50"}
-                  `}
-                >
-                  <PiRobotBold size={20} className="text-purple-600" />
-                  XPosi AI
-                </Link>
-
-              </div>
+            {/* PROFILE BUTTON — Visible ONLY when logged in */}
+            {user && (
+              <Link
+                href="/profile"
+                className="
+                flex items-center gap-2 px-4 py-2 rounded-xl 
+                bg-white/10 hover:bg-white/20 transition text-sm font-medium"
+              >
+                <FaUserCircle size={18} className="text-yellow-300" />
+                Profile
+              </Link>
             )}
+
+            {/* If no user: show Login/Signup */}
+            {!user && (
+              <>
+                <Link
+                  href="/auth/login"
+                  className="text-sm font-medium px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20"
+                >
+                  Login
+                </Link>
+
+                <Link
+                  href="/auth/signup"
+                  className="text-sm font-medium px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
+
+            {/* DROPDOWN MENU BUTTON */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setOpen(!open)}
+                className="p-2 rounded-full hover:bg-white/10 transition"
+              >
+                <FiMenu size={24} />
+              </button>
+
+              {/* ▼ Dropdown ▼ */}
+              {open && (
+                <div className="
+                  absolute right-0 mt-3 w-72 bg-white text-slate-800 shadow-xl 
+                  rounded-xl border border-slate-200 py-2
+                ">
+                  {topLinks.map((item) => {
+                    const active = pathname === item.href;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`
+                          flex items-center gap-3 px-4 py-2 text-sm rounded-lg
+                          ${active ? "bg-blue-100 text-blue-700 font-semibold" : "hover:bg-blue-50"}
+                        `}
+                      >
+                        {item.icon}
+                        {item.name}
+                      </Link>
+                    );
+                  })}
+
+                  {/* EXPLORE PROJECTIONS */}
+                  <button
+                    onClick={() => setModulesOpen(!modulesOpen)}
+                    className="
+                      flex items-center justify-between w-full px-4 py-2 mt-1 mb-1 text-sm rounded-lg
+                      hover:bg-blue-50 transition
+                    "
+                  >
+                    <div className="flex items-center gap-3">
+                      <GiPelvisBone size={20} className="text-blue-700" />
+                      Explore Projections
+                    </div>
+                    <FiChevronDown
+                      className={`transition-transform ${modulesOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  {modulesOpen && (
+                    <div className="pl-8 pr-4 py-1 space-y-1">
+                      {moduleLinks.map((item) => {
+                        const active = pathname === item.href;
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className={`
+                              flex items-center gap-2 px-3 py-1.5 text-sm rounded-md
+                              ${active ? "bg-blue-100 text-blue-700 font-semibold" : "hover:bg-blue-50"}
+                            `}
+                          >
+                            {item.icon}
+                            {item.name}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* XPosiLearn */}
+                  <Link
+                    href="/xposilearn"
+                    className={`
+                      flex items-center gap-3 px-4 py-2 text-sm rounded-lg mt-1
+                      ${pathname === "/xposilearn" ? "bg-blue-100 text-blue-700 font-semibold" : "hover:bg-blue-50"}
+                    `}
+                  >
+                    <MdMenuBook size={20} className="text-indigo-600" />
+                    XPosiLearn
+                  </Link>
+
+                  {/* XPosi AI */}
+                  <Link
+                    href="/xposi-ai"
+                    className={`
+                      flex items-center gap-3 px-4 py-2 text-sm rounded-lg
+                      ${pathname === "/xposi-ai" ? "bg-blue-100 text-blue-700 font-semibold" : "hover:bg-blue-50"}
+                    `}
+                  >
+                    <PiRobotBold size={20} className="text-purple-600" />
+                    XPosi AI
+                  </Link>
+                </div>
+              )}
+            </div>
+
           </div>
         </nav>
       </div>
