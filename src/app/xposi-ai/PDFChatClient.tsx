@@ -225,16 +225,21 @@ export default function PDFChatClient() {
                 className={`flex items-start gap-3 ${
                   m.sender === "user" ? "flex-row-reverse" : ""
                 }`}
+                            >
+              {/* AVATAR */}
+              <div
+                className={`
+                  w-12 h-12 
+                  rounded-full 
+                  flex items-center justify-center 
+                  text-white text-base font-semibold 
+                  px-2 truncate shadow
+                  ${m.sender === "user" ? "bg-blue-600" : "bg-gray-700"}
+                `}
               >
-                {/* AVATAR */}
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shadow
-                    ${
-                      m.sender === "user" ? "bg-blue-600" : "bg-gray-700"
-                    }`}
-                >
-                  {m.sender === "user" ? "You" : "XPosi AI"}
-                </div>
+                {m.sender === "user" ? "You" : "XPosi AI"}
+              </div>
+
 
                 {/* BUBBLE */}
                 <div
