@@ -4,6 +4,7 @@ import matter from "gray-matter";
 import { remark } from "remark";
 import html from "remark-html";
 import XPosiAIClient from "./XPosiAIClient";
+import PDFChatClient from "./PDFChatClient"; // ✅ NEW
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -164,8 +165,7 @@ export default async function XPosiAIPage({
           />
         </section>
 
-
-        {/* 🤖 AI Assistant */}
+        {/* 🤖 AI Assistant (EXISTING SYSTEM) */}
         <section className="bg-gradient-to-br from-blue-50 to-white border border-blue-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition">
           <h2 className="text-2xl font-semibold text-blue-700 mb-4 text-center">
             🤖 Ask <span className="font-extrabold text-blue-800">XPosi AI</span>
@@ -174,7 +174,6 @@ export default async function XPosiAIPage({
             Click below to generate AI-based guidance or explanations for this paper.
           </p>
 
-          {/* Keep AI analysis text left-aligned */}
           <div className="flex flex-col items-stretch">
             <XPosiAIClient content={textForAI} />
           </div>
@@ -186,44 +185,91 @@ export default async function XPosiAIPage({
             </p>
           </div>
         </section>
-
       </main>
     );
   }
 
-  // Otherwise, list all papers
-  return (
-    <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-10">
-      <h1 className="text-4xl sm:text-5xl font-extrabold text-blue-700 text-center mb-4">
-        XPosi AI
-      </h1>
-      <p className="text-base sm:text-lg text-gray-500 text-center mb-12">
-        Smart AI assistance for your past papers — learn faster, study smarter.
-      </p>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {papers.map((p) => (
-          <a
-            key={p.id}
-            href={`/xposi-ai?file=${encodeURIComponent(p.filename)}`}
-            className="block p-6 rounded-2xl border border-neutral-200 bg-white shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all"
-          >
-            <h2 className="text-blue-700 font-bold text-lg mb-2 truncate">
-              {p.filename.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ")}
-            </h2>
-            <p className="text-sm text-neutral-500">
-              {p.year ? `Year ${p.year}` : "General"}
-            </p>
-          </a>
-        ))}
-      </div>
+// Otherwise, list all papers + NEW PDF chat system
+return (
+  <main className="w-full">
 
-      <footer className="mt-16 border-t border-neutral-200 pt-6 text-center text-sm text-neutral-500">
-        <p>
-          <strong>XPosi AI</strong> © {new Date().getFullYear()} — Educational
-          use only. Always follow institutional standards.
+    {/* ------------------------------------ */}
+    {/* SECTION 1 — Past Papers (WHITE)      */}
+    {/* ------------------------------------ */}
+
+    <section className="w-full bg-white py-16">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+
+        <h1 className="text-4xl sm:text-5xl font-extrabold text-blue-700 text-center mb-4">
+          XPosi AI
+        </h1>
+
+        <p className="text-base sm:text-lg text-gray-500 text-center mb-12">
+          Smart AI assistance for your past papers — learn faster, study smarter.
         </p>
-      </footer>
-    </main>
-  );
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {papers.map((p) => (
+            <a
+              key={p.id}
+              href={`/xposi-ai?file=${encodeURIComponent(p.filename)}`}
+              className="block p-6 rounded-2xl border border-neutral-200 bg-white shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all"
+            >
+              <h2 className="text-blue-700 font-bold text-lg mb-2 truncate">
+                {p.filename.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ")}
+              </h2>
+              <p className="text-sm text-neutral-500">
+                {p.year ? `Year ${p.year}` : "General"}
+              </p>
+            </a>
+          ))}
+        </div>
+
+      </div>
+    </section>
+
+    {/* ------------------------------------ */}
+    {/* SECTION 2 — Chat with Your PDF (BLUE) */}
+    {/* ------------------------------------ */}
+
+    <section className="w-full bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 py-20">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-white">
+
+        <h2 className="text-3xl sm:text-4xl font-bold mb-3 text-center">
+          Chat with Your Own PDF
+        </h2>
+
+        <p className="text-sm sm:text-base text-blue-100 text-center max-w-2xl mx-auto mb-8">
+          Upload any radiography PDF (notes, protocol, guideline) and ask XPosi AI 
+          questions. Answers are based only on the content of your PDF.
+        </p>
+
+        <div className="bg-white/95 rounded-2xl p-4 sm:p-6 shadow-xl max-w-3xl mx-auto">
+          <PDFChatClient />
+        </div>
+
+        <p className="mt-6 text-[11px] sm:text-xs text-blue-100 text-center">
+          XPosi PDF AI is for education only. Always confirm with institutional policies and protocols.
+        </p>
+
+      </div>
+    </section>
+
+    {/* ------------------------------------ */}
+    {/* FOOTER                               */}
+    {/* ------------------------------------ */}
+
+    <footer className="w-full bg-white border-t border-neutral-200 py-6 text-center text-sm text-neutral-500">
+      <p>
+        <strong>XPosi AI</strong> © {new Date().getFullYear()} — Educational use only.
+        Always follow institutional standards.
+      </p>
+    </footer>
+
+  </main>
+);
+
+
+
 }

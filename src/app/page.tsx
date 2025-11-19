@@ -127,39 +127,6 @@ export default function HomePage() {
               </p>
 
            
-              {/* FEATURE BULLETS */}
-              <div className="grid sm:grid-cols-2 gap-4 mt-10 max-w-3xl mx-auto text-left">
-
-                <div className="p-4 bg-blue-50 rounded-xl shadow-sm border border-blue-100">
-                  <h4 className="font-bold text-blue-700 mb-1 text-lg">📌 Clear Positioning Steps</h4>
-                  <p className="text-neutral-700 text-sm">
-                    Easy-to-follow instructions for every major skeletal region.
-                  </p>
-                </div>
-
-                <div className="p-4 bg-blue-50 rounded-xl shadow-sm border border-blue-100">
-                  <h4 className="font-bold text-blue-700 mb-1 text-lg">🦴 Anatomy Made Simple</h4>
-                  <p className="text-neutral-700 text-sm">
-                    Visual diagrams that connect projection techniques with underlying anatomy.
-                  </p>
-                </div>
-
-                <div className="p-4 bg-blue-50 rounded-xl shadow-sm border border-blue-100">
-                  <h4 className="font-bold text-blue-700 mb-1 text-lg">🎓 Exam-Focused Content</h4>
-                  <p className="text-neutral-700 text-sm">
-                    Study Notes, Past Papers, and image critique tips tailored for exams.
-                  </p>
-                </div>
-
-                <div className="p-4 bg-blue-50 rounded-xl shadow-sm border border-blue-100">
-                  <h4 className="font-bold text-blue-700 mb-1 text-lg">⚡ Instant Learning</h4>
-                  <p className="text-neutral-700 text-sm">
-                    Explore modules, projections, and AI tools at your own pace.
-                  </p>
-                </div>
-
-              </div>
-
               {/* PRO TIPS */}
               <div className="mt-12">
                 

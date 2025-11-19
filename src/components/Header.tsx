@@ -95,20 +95,7 @@ export default function Header() {
           {/* RIGHT SIDE: PROFILE + MENU */}
           <div className="flex items-center gap-4">
 
-            {/* PROFILE BUTTON — Visible ONLY when logged in */}
-            {user && (
-              <Link
-                href="/profile"
-                className="
-                flex items-center gap-2 px-4 py-2 rounded-xl 
-                bg-white/10 hover:bg-white/20 transition text-sm font-medium"
-              >
-                <FaUserCircle size={18} className="text-yellow-300" />
-                Profile
-              </Link>
-            )}
-
-            {/* DROPDOWN MENU BUTTON */}
+           {/* DROPDOWN MENU BUTTON */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setOpen(!open)}
