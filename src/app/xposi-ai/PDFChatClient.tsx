@@ -233,7 +233,7 @@ export default function PDFChatClient() {
                       m.sender === "user" ? "bg-blue-600" : "bg-gray-700"
                     }`}
                 >
-                  {m.sender === "user" ? "U" : "AI"}
+                  {m.sender === "user" ? "You" : "XPosi AI"}
                 </div>
 
                 {/* BUBBLE */}
