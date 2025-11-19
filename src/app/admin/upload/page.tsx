@@ -14,10 +14,11 @@ import DeleteLinkSection from "@/components/admin/DeleteLinkSection";
 import DeleteFileSection from "@/components/admin/DeleteFileSection";
 import Logout from "@/components/admin/Logout";
 import ReturnToTop from "@/components/ReturnToTop";
-
+import ActiveUsersCard from "@/components/admin/ActiveUsersCard";
 import { logActivity } from "@/lib/logActivity";   // ✅ ADDED
 
 type Stats = {
+  activeUsers: number;
   notes: number;
   papers: number;
   modules: number;
@@ -71,6 +72,7 @@ export default function AdminDashboard() {
 
   /* ---------------- STATS ---------------- */
   const [stats, setStats] = useState({
+    activeUsers: 0,
     notes: 0,
     papers: 0,
     modules: 0,
@@ -85,6 +87,7 @@ export default function AdminDashboard() {
         const data = await res.json();
         if (data.success) {
           setStats({
+            activeUsers: data.activeUsers ?? 0,
             notes: data.notes,
             papers: data.papers,
             modules: data.modules,
@@ -328,6 +331,7 @@ export default function AdminDashboard() {
         >
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
+              { label: "Active Users", value: stats.activeUsers },
               { label: "Notes", value: stats.notes },
               { label: "Past Papers", value: stats.papers },
               { label: "Projections", value: stats.modules },
@@ -340,10 +344,18 @@ export default function AdminDashboard() {
               >
                 <p className="text-xs uppercase text-slate-500">{s.label}</p>
                 <p className="text-2xl font-extrabold text-blue-700">{s.value}</p>
+
+                {/* OPTIONAL small hint for active users only */}
+                {s.label === "Active Users (Realtime)" && (
+                  <p className="text-[10px] mt-1 text-slate-400">
+                    Counted within last 2 minutes
+                  </p>
+                )}
               </div>
             ))}
           </div>
         </AdminSection>
+
 
         {/* ---------------- UPLOAD FILES ---------------- */}
         <AdminSection

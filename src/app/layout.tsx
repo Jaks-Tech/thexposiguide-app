@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Script from "next/script";
 import HydratedError from "@/components/HydratedError";  
+import AnalyticsHeartbeat from "@/components/AnalyticsHeartbeat";   // ✅ ADDED
 
 export const metadata: Metadata = {
   title: "The XPosiGuide",
@@ -21,6 +22,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         suppressHydrationWarning
         className="min-h-screen flex flex-col bg-white text-neutral-900"
       >
+
+        {/* ✅ REALTIME USER HEARTBEAT (runs globally on all pages) */}
+        <AnalyticsHeartbeat />
 
         {/* HEADER */}
         <HydratedError>
