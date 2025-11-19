@@ -7,7 +7,6 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const preferredRegion = "auto";
 
-/** Convert File → Buffer */
 async function fileToBuffer(file: File): Promise<Buffer> {
   const arrayBuffer = await file.arrayBuffer();
   return Buffer.from(arrayBuffer);
@@ -17,118 +16,130 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData();
 
-    // 🧩 Extract form fields
+    // 🔹 Multi-file support
+    const files = formData.getAll("file") as File[];
+    const image = formData.get("image") as File | null;
+
     const category = formData.get("category") as string;
     const year = formData.get("year") as string | null;
     const module = formData.get("module") as string | null;
-    const file = formData.get("file") as File | null;
-    const image = formData.get("image") as File | null;
 
-    if (!file || !category) {
-      return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+    if (!files.length || !category) {
+      return NextResponse.json(
+        { error: "Missing required fields." },
+        { status: 400 }
+      );
     }
 
-    // ✅ Single bucket
     const bucket = "xposilearn";
 
-    // ✅ Determine folder based on category
+    // 📁 Determine folder path
     let folderPath = "";
-    if (category === "notes") {
-      folderPath = `notes/${year || "general"}`;
-    } else if (category === "papers") {
-      folderPath = `papers/${year || "general"}`;
-    } else if (category === "module") {
-      folderPath = `modules/${module || "general"}`;
-    } else {
-      return NextResponse.json({ error: "Invalid category." }, { status: 400 });
-    }
+    if (category === "notes") folderPath = `notes/${year || "general"}`;
+    else if (category === "papers") folderPath = `papers/${year || "general"}`;
+    else if (category === "module") folderPath = `modules/${module || "general"}`;
+    else return NextResponse.json({ error: "Invalid category." }, { status: 400 });
 
-    // ✅ File naming
-    const ext = file.name.split(".").pop()?.toLowerCase();
-    const uniqueId = randomUUID();
-    const fileName = `${uniqueId}.${ext}`;
-    const fullPath = `${folderPath}/${fileName}`;
+    // --------------------------------------------------------
+    // 🔥 Process ALL files in parallel
+    // --------------------------------------------------------
+    const uploadResults = await Promise.all(
+      files.map(async (file) => {
+        const ext = file.name.split(".").pop()?.toLowerCase();
+        const uniqueId = randomUUID();
+        const fileName = `${uniqueId}.${ext}`;
+        const fullPath = `${folderPath}/${fileName}`;
 
-    // 🧠 Convert file → buffer
-    const fileBuffer = await fileToBuffer(file);
+        const fileBuffer = await fileToBuffer(file);
 
-    // ✅ Upload to Supabase
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from(bucket)
-      .upload(fullPath, fileBuffer, {
-        contentType: file.type || "application/octet-stream",
-        cacheControl: "3600",
-        upsert: false,
-      });
+        // Upload
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from(bucket)
+          .upload(fullPath, fileBuffer, {
+            contentType: file.type || "application/octet-stream",
+            cacheControl: "3600",
+            upsert: false,
+          });
 
-    if (uploadError) {
-      console.error("❌ Upload error:", uploadError.message);
-      return NextResponse.json({ error: uploadError.message }, { status: 500 });
-    }
+        if (uploadError) {
+          console.error("Upload error:", uploadError.message);
+          return { error: uploadError.message };
+        }
 
-    // ✅ Public URL
-    const { data: publicData } = supabaseAdmin.storage.from(bucket).getPublicUrl(fullPath);
-    const fileUrl = publicData?.publicUrl || "";
+        // Public URL
+        const { data: publicUrlData } = supabaseAdmin.storage
+          .from(bucket)
+          .getPublicUrl(fullPath);
 
-    // ✅ Extract slug (for modules only)
-    let slug = file.name.replace(/\.[^/.]+$/, "");
-    if (category === "module" && ext === "md") {
-      const text = fileBuffer.toString("utf8");
-      const { data } = matter(text);
-      if (data?.slug) slug = data.slug;
-    }
+        const fileUrl = publicUrlData?.publicUrl || "";
 
-    // ✅ Optional image upload (for modules)
+        // Extract slug if markdown
+        let slug = file.name.replace(/\.[^/.]+$/, "");
+        if (category === "module" && ext === "md") {
+          const text = fileBuffer.toString("utf8");
+          const { data } = matter(text);
+          if (data?.slug) slug = data.slug;
+        }
+
+        // Insert DB row
+        const { error: insertError } = await supabaseAdmin
+          .from("uploads")
+          .insert([
+            {
+              filename: file.name,
+              category,
+              year,
+              module,
+              file_url: fileUrl,
+              path: fullPath,
+              slug,
+            },
+          ]);
+
+        if (insertError) {
+          console.error("DB insert error:", insertError.message);
+          return { error: insertError.message };
+        }
+
+        return { success: true, slug, url: fileUrl };
+      })
+    );
+
+    // --------------------------------------------------------
+    // 🔥 Upload module thumbnail (only once)
+    // --------------------------------------------------------
     let imageUrl: string | null = null;
-    if (image) {
-      const imgBuffer = await fileToBuffer(image);
-      const imgExt = image.name.split(".").pop();
-      const imgPath = `modules/${module || "general"}/${slug}.${imgExt}`;
 
-      const { error: imgError } = await supabaseAdmin.storage
+    if (image) {
+      const imgExt = image.name.split(".").pop();
+      const firstFile = files[0];
+      const fallbackSlug = firstFile.name.replace(/\.[^/.]+$/, "");
+
+      const imgPath = `modules/${module || "general"}/${fallbackSlug}.${imgExt}`;
+      const buffer = await fileToBuffer(image);
+
+      const { error: imgErr } = await supabaseAdmin.storage
         .from(bucket)
-        .upload(imgPath, imgBuffer, {
+        .upload(imgPath, buffer, {
           contentType: image.type,
-          cacheControl: "3600",
           upsert: false,
         });
 
-      if (!imgError) {
-        const { data: imgPublic } = await supabaseAdmin
+      if (!imgErr) {
+        const { data: imgPub } = supabaseAdmin
           .storage
           .from(bucket)
           .getPublicUrl(imgPath);
-        imageUrl = imgPublic?.publicUrl || null;
+        imageUrl = imgPub?.publicUrl || null;
       } else {
-        console.error("Image upload error:", imgError.message);
+        console.error("Image upload error:", imgErr.message);
       }
-    }
-
-    // ✅ Insert into DB
-    const { error: insertError } = await supabaseAdmin.from("uploads").insert([
-      {
-        filename: file.name,
-        category,
-        year,
-        module,
-        file_url: fileUrl,
-        image_url: imageUrl,
-        path: fullPath,
-        slug, // only relevant for md files
-      },
-    ]);
-
-    if (insertError) {
-      console.error("DB insert error:", insertError.message);
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
     return NextResponse.json({
       success: true,
-      message: "✅ Uploaded successfully!",
-      slug,
-      url: fileUrl,
-      image: imageUrl,
+      uploaded: uploadResults,
+      imageUrl,
     });
   } catch (err: any) {
     console.error("❌ Upload failed:", err);

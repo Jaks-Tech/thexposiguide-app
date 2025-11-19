@@ -57,7 +57,8 @@ export default function AdminDashboard() {
   }, [router]);
 
   /* ---------------- SHARED STATE ---------------- */
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [image, setImage] = useState<File | null>(null);
   const [category, setCategory] = useState("notes");
   const [year, setYear] = useState("year-1");
@@ -144,38 +145,52 @@ export default function AdminDashboard() {
   /* ---------------- UPLOAD HANDLER ---------------- */
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
-    if (!file) return showToast("Select a file first.");
+    if (!files.length) return showToast("Select at least one file first.");
 
     setIsUploading(true);
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("category", category);
-    if (image) formData.append("image", image);
-    formData.append("module", module);
-    formData.append("year", year);
+    setUploadProgress({});
 
     try {
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
+      for (const f of files) {
+        // start progress at 10%
+        setUploadProgress((prev) => ({ ...prev, [f.name]: 10 }));
 
-      if (data.success) {
-        showToast("File uploaded successfully!");
-        pushActivity(`Uploaded file: ${file.name}`);
+        const formData = new FormData();
+        formData.append("file", f);
+        formData.append("category", category);
+        if (image) formData.append("image", image);
+        formData.append("module", module);
+        formData.append("year", year);
 
-        await logActivity(`Uploaded file: ${file.name}`);   // ✅ ADDED
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
 
-        setFile(null);
-        setImage(null);
-      } else {
-        showToast("Upload failed.");
+        const data = await res.json();
+
+        if (data.success) {
+          setUploadProgress((prev) => ({ ...prev, [f.name]: 100 }));
+          showToast(`Uploaded: ${f.name}`);
+          pushActivity(`Uploaded file: ${f.name}`);
+          // if you still have logActivity:
+          // await logActivity(`Uploaded file: ${f.name}`);
+        } else {
+          setUploadProgress((prev) => ({ ...prev, [f.name]: 100 }));
+          showToast(`Upload failed: ${f.name}`);
+        }
       }
-    } catch {
+
+      setFiles([]);
+      setImage(null);
+    } catch (err) {
+      console.error(err);
       showToast("Upload error.");
     } finally {
       setIsUploading(false);
     }
   }
+
 
   /* ---------------- DELETE LINK ---------------- */
   async function handleLinkDelete(e: React.FormEvent) {
@@ -364,22 +379,22 @@ export default function AdminDashboard() {
           sectionRefs={sectionRefs}
           activeSection={activeSection}
         >
-          <UploadFileSection
-            file={file}
-            setFile={setFile}
-            image={image}
-            setImage={setImage}
-            category={category}
-            setCategory={setCategory}
-            year={year}
-            setYear={setYear}
-            module={module}
-            setModule={setModule}
-            isUploading={isUploading}
-            setIsUploading={setIsUploading}
-            setStatus={showToast}
-            handleUpload={handleUpload}
-          />
+        <UploadFileSection
+          files={files}
+          setFiles={setFiles}
+          image={image}
+          setImage={setImage}
+          category={category}
+          setCategory={setCategory}
+          year={year}
+          setYear={setYear}
+          module={module}
+          setModule={setModule}
+          isUploading={isUploading}
+          handleUpload={handleUpload}
+          uploadProgress={uploadProgress}
+        />
+
         </AdminSection>
 
           <AddLinkSection
