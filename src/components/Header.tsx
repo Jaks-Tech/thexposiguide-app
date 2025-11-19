@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-
+import ActiveUsersBadge from "./ActiveUsersBadge";
 import { FiMenu, FiChevronDown } from "react-icons/fi";
 
 import { MdHome, MdMenuBook } from "react-icons/md";
@@ -23,6 +23,13 @@ export default function Header() {
 
   // 🔹 Load Supabase Auth User
   useEffect(() => {
+/*************  ✨ Windsurf Command ⭐  *************/
+/**
+ * Loads the currently authenticated user from Supabase
+ * and sets the user state with the fetched user data.
+ * @returns {Promise<void>} Resolves when the user is loaded.
+ */
+/*******  c00f928d-b1e9-4e80-a0e8-54bbceb28e4f  *******/
     const loadUser = async () => {
       const { data } = await supabase.auth.getUser();
       setUser(data.user);
@@ -94,6 +101,9 @@ export default function Header() {
 
           {/* RIGHT SIDE: PROFILE + MENU */}
           <div className="flex items-center gap-4">
+            
+          {/* ACTIVE USERS BADGE */}
+          <ActiveUsersBadge />
 
            {/* DROPDOWN MENU BUTTON */}
             <div className="relative" ref={dropdownRef}>
