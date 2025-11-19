@@ -1,11 +1,3 @@
-// ✅ MUST BE THE FIRST THING IN THE FILE
-export const config = {
-  api: {
-    bodyParser: false,
-    sizeLimit: "100mb", // increase as needed
-  },
-};
-
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { randomUUID } from "crypto";
