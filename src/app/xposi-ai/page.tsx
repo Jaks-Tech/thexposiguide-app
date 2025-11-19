@@ -1,6 +1,8 @@
-export const metadata = {
-  viewport: "smooth-scroll=0",
-};
+<style>{`
+  html {
+    scroll-behavior: auto !important;
+  }
+`}</style>
 
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabaseServer";
@@ -143,6 +145,12 @@ export default async function XPosiAIPage({
 
     return (
       <main className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-10">
+          {/* 🔥 FIX SCROLL JUMP */}
+          <style>{`
+            html {
+              scroll-behavior: auto !important;
+            }
+          `}</style>
         <div className="mb-6">
           <a
             href="/xposi-ai"

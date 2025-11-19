@@ -47,6 +47,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <HydratedError>
           <Footer />
         </HydratedError>
+        <Script id="disable-scroll-restore" strategy="afterInteractive">
+          {`
+            if ('scrollRestoration' in history) {
+              history.scrollRestoration = 'manual';
+            }
+          `}
+        </Script>
 
         {/* MAILERLITE SCRIPT */}
         <Script id="mailerlite-universal" strategy="afterInteractive">
