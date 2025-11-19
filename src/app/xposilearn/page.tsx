@@ -3,7 +3,7 @@ import Head from "next/head";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
-
+import ReturnToTop from "@/components/ReturnToTop";
 // 🕒 Countdown Component
 function Countdown({ deadline }: { deadline: string }) {
   const [timeLeft, setTimeLeft] = useState("");
@@ -258,7 +258,7 @@ export default function XPosiLearnPage() {
                   className="object-contain bg-white p-2"
                 />
               </div>
-
+              <ReturnToTop />
               <div className="p-5 flex-1 overflow-y-auto max-h-[480px] scrollbar-thin scrollbar-thumb-blue-200 scrollbar-track-transparent">
                 <h2 className="text-xl font-semibold text-blue-700 mb-4">Assignments</h2>
 

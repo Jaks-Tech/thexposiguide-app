@@ -1,3 +1,7 @@
+export const metadata = {
+  viewport: "smooth-scroll=0",
+};
+
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import matter from "gray-matter";
@@ -5,7 +9,7 @@ import { remark } from "remark";
 import html from "remark-html";
 import XPosiAIClient from "./XPosiAIClient";
 import PDFChatClient from "./PDFChatClient"; // ✅ NEW
-
+import ReturnToTop from "@/components/ReturnToTop";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const revalidate = 0;
@@ -255,6 +259,7 @@ return (
 
       </div>
     </section>
+    <ReturnToTop />
 
     {/* ------------------------------------ */}
     {/* FOOTER                               */}
