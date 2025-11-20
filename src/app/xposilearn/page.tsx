@@ -3,43 +3,112 @@ import Head from "next/head";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
-import ReturnToTop from "@/components/ReturnToTop";
-// 🕒 Countdown Component
+
+/* ---------------------------------------------------------
+   UNIVERSAL FILE VIEWER (supports all file types)
+--------------------------------------------------------- */
+async function renderFileAsHtml(path: string, filename: string) {
+  const ext: string = filename.split(".").pop()?.toLowerCase() || "";
+
+  // Fetch public URL for Supabase-stored files
+  const { data: pub } = supabase.storage
+    .from("xposilearn")
+    .getPublicUrl(path);
+
+  const url: string = pub?.publicUrl || "";
+
+  let htmlContent = "";
+
+  // PDF
+  if (ext === "pdf") {
+    htmlContent = `
+      <iframe src="${url}#toolbar=0" width="100%" height="100%" style="border:none;"></iframe>
+    `;
+  }
+
+  // DOC / DOCX
+  else if (["doc", "docx"].includes(ext)) {
+    htmlContent = `
+      <iframe 
+        src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}" 
+        width="100%" height="100%" style="border:none;">
+      </iframe>
+    `;
+  }
+
+  // PPT / PPTX
+  else if (["ppt", "pptx"].includes(ext)) {
+    htmlContent = `
+      <iframe 
+        src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}" 
+        width="100%" height="100%" style="border:none;">
+      </iframe>
+    `;
+  }
+
+  // Images
+  else if (["jpg", "jpeg", "png", "webp", "gif"].includes(ext)) {
+    htmlContent = `
+      <div style="display:flex;justify-content:center;align-items:center;height:100%;">
+        <img src="${url}" style="max-width:100%;max-height:100%;border-radius:10px;" />
+      </div>
+    `;
+  }
+
+  // Videos
+  else if (["mp4", "mov", "webm"].includes(ext)) {
+    htmlContent = `
+      <div style="display:flex;justify-content:center;align-items:center;height:100%;">
+        <video controls style="max-height:100%;border-radius:10px;">
+          <source src="${url}" type="video/${ext}" />
+        </video>
+      </div>
+    `;
+  }
+
+  // Fallback
+  else {
+    htmlContent = `
+      <iframe src="${url}" width="100%" height="100%" style="border:none;"></iframe>
+    `;
+  }
+
+  return { htmlContent };
+}
+
+/* ---------------------------------------------------------
+   COUNTDOWN COMPONENT
+--------------------------------------------------------- */
 function Countdown({ deadline }: { deadline: string }) {
   const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
-    const updateCountdown = () => {
-      const now = new Date().getTime();
+    const update = () => {
+      const now = Date.now();
       const end = new Date(deadline).getTime();
       const diff = end - now;
 
-      if (diff <= 0) {
-        setTimeLeft("⏰ Deadline passed");
-        return;
-      }
+      if (diff <= 0) return setTimeLeft("⏰ Deadline passed");
 
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hrs = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const secs = Math.floor((diff % (1000 * 60)) / 1000);
+      const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const m = Math.floor((diff / (1000 * 60)) % 60);
+      const s = Math.floor((diff / 1000) % 60);
 
-      let display = "";
-      if (days > 0) display += `${days}d `;
-      display += `${hrs}h ${mins}m ${secs}s`;
-
-      setTimeLeft(`⏳ ${display}`);
+      setTimeLeft(`⏳ ${d}d ${h}h ${m}m ${s}s`);
     };
 
-    updateCountdown();
-    const timer = setInterval(updateCountdown, 1000);
-    return () => clearInterval(timer);
+    update();
+    const t = setInterval(update, 1000);
+    return () => clearInterval(t);
   }, [deadline]);
 
   return (
     <p
       className={`text-xs mt-1 ${
-        timeLeft.includes("passed") ? "text-gray-500" : "text-red-500 font-medium"
+        timeLeft.includes("passed")
+          ? "text-gray-500"
+          : "text-red-500 font-medium"
       }`}
     >
       {timeLeft}
@@ -47,6 +116,9 @@ function Countdown({ deadline }: { deadline: string }) {
   );
 }
 
+/* ---------------------------------------------------------
+   MAIN PAGE
+--------------------------------------------------------- */
 export default function XPosiLearnPage() {
   const [notes, setNotes] = useState<any[]>([]);
   const [papers, setPapers] = useState<any[]>([]);
@@ -54,6 +126,11 @@ export default function XPosiLearnPage() {
   const [assignments, setAssignments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [selectedFile, setSelectedFile] = useState<any | null>(null);
+  const [viewerHtml, setViewerHtml] = useState<string>("");
+  const [viewedName, setViewedName] = useState<string>("");
+
+  /* Load data */
   useEffect(() => {
     (async () => {
       const [notesRes, papersRes, linksRes, assignmentsRes] = await Promise.all([
@@ -63,40 +140,73 @@ export default function XPosiLearnPage() {
         supabase.from("assignments").select("*").order("deadline", { ascending: true }),
       ]);
 
-      if (!notesRes.error) setNotes(notesRes.data || []);
-      if (!papersRes.error) setPapers(papersRes.data || []);
-      if (!linksRes.error) setLinks(linksRes.data || []);
-      if (!assignmentsRes.error) setAssignments(assignmentsRes.data || []);
+      if (!notesRes.error) setNotes(notesRes.data);
+      if (!papersRes.error) setPapers(papersRes.data);
+      if (!linksRes.error) setLinks(linksRes.data);
+      if (!assignmentsRes.error) setAssignments(assignmentsRes.data);
+
       setLoading(false);
     })();
   }, []);
 
-  const groupByYear = (items: any[]) => {
+  /* ---------------------------------------------------------
+     OPEN VIEWER (UNIVERSAL HANDLER: notes, papers, assignments, links)
+  --------------------------------------------------------- */
+  const openViewer = async (item: any) => {
+    let path = item.path || "";
+    let filename = item.filename || item.title || item.name || "File";
+    let fileUrl = item.file_url || item.url || null;
+
+    setViewedName(filename);
+
+    // Case 1: Supabase file (notes, papers, assignments)
+    if (path) {
+      const { htmlContent } = await renderFileAsHtml(path, filename);
+      setViewerHtml(htmlContent);
+      setSelectedFile(item);
+      return;
+    }
+
+    // Case 2: Direct URL (assignments or links)
+    if (fileUrl) {
+      const ext = filename.split(".").pop()?.toLowerCase() || "";
+      let html = "";
+
+      if (ext === "pdf") {
+        html = `<iframe src="${fileUrl}#toolbar=0" width="100%" height="100%" style="border:none;"></iframe>`;
+      } else if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) {
+        html = `<div style="display:flex;justify-content:center;align-items:center;height:100%;"><img src="${fileUrl}" style="max-width:100%;max-height:100%;" /></div>`;
+      } else {
+        html = `<iframe src="${fileUrl}" width="100%" height="100%" style="border:none;"></iframe>`;
+      }
+
+      setViewerHtml(html);
+      setSelectedFile(item);
+    }
+  };
+
+  const closeViewer = () => {
+    setSelectedFile(null);
+    setViewerHtml("");
+  };
+
+  /* Grouping */
+  const groupBy = (items: any[], key: string) => {
     const grouped: Record<string, any[]> = {};
-    items.forEach((item) => {
-      const year = item.year || "other";
-      if (!grouped[year]) grouped[year] = [];
-      grouped[year].push(item);
+    items.forEach((i) => {
+      const k = i[key] || "other";
+      if (!grouped[k]) grouped[k] = [];
+      grouped[k].push(i);
     });
     return grouped;
   };
 
-  const groupByCategory = (items: any[]) => {
-    const grouped: Record<string, any[]> = {};
-    items.forEach((item) => {
-      const category = item.category || "Other";
-      if (!grouped[category]) grouped[category] = [];
-      grouped[category].push(item);
-    });
-    return grouped;
-  };
-
-  const notesByYear = groupByYear(notes);
-  const papersByYear = groupByYear(papers);
-  const linksByCategory = groupByCategory(links);
+  const notesByYear = groupBy(notes, "year");
+  const papersByYear = groupBy(papers, "year");
+  const linksByCat = groupBy(links, "category");
 
   const yearOrder = ["year-1", "year-2", "year-3", "other"];
-  const yearLabels: Record<string, string> = {
+  const yearLabels: any = {
     "year-1": "Year 1",
     "year-2": "Year 2",
     "year-3": "Year 3",
@@ -107,12 +217,35 @@ export default function XPosiLearnPage() {
     <>
       <Head>
         <title>XPosiLearn — The XPosiGuide</title>
-        <meta
-          name="description"
-          content="Study & revision: Download Notes, Past Papers, Assignments, and Educational Links."
-        />
       </Head>
 
+      {/* ---------------------------------------------------------
+         🔥 FULLSCREEN MODAL VIEWER
+      --------------------------------------------------------- */}
+      {selectedFile && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999]">
+          <div className="relative bg-white rounded-xl w-[95%] h-[90%] overflow-hidden shadow-xl">
+
+            {/* header */}
+            <div className="absolute top-0 left-0 right-0 bg-white/95 border-b p-3 flex justify-between items-center z-10">
+              <span className="font-semibold text-blue-700">{viewedName}</span>
+              <button
+                onClick={closeViewer}
+                className="bg-red-500 text-white px-3 py-1 rounded-full shadow hover:bg-red-600"
+              >
+                Close ✕
+              </button>
+            </div>
+
+            {/* content */}
+            <div className="w-full h-full pt-12" dangerouslySetInnerHTML={{ __html: viewerHtml }} />
+          </div>
+        </div>
+      )}
+
+      {/* ---------------------------------------------------------
+         MAIN PAGE
+      --------------------------------------------------------- */}
       <main className="mx-auto max-w-6xl px-4 py-10">
         <header className="text-center mb-10">
           <h1 className="text-4xl font-bold text-blue-600">XPosiLearn</h1>
@@ -124,193 +257,134 @@ export default function XPosiLearnPage() {
         {loading ? (
           <p className="text-center text-gray-500">Loading…</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-10 max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 text-justify">
-            {/* ================== NOTES ================== */}
-            <div className="border rounded-2xl shadow-sm overflow-hidden bg-white flex flex-col">
-              <div className="relative w-full aspect-[16/9] flex-shrink-0">
-                <Image
-                  src="/assets/xposilearn-note.png"
-                  alt="Notes"
-                  fill
-                  className="object-contain bg-white p-2"
-                />
-              </div>
-              <div className="p-5 flex-1 overflow-y-auto max-h-[480px] scrollbar-thin scrollbar-thumb-blue-200 scrollbar-track-transparent">
-                <h2 className="text-xl font-semibold text-blue-700 mb-4">Module Notes</h2>
-                {notes.length === 0 ? (
-                  <p className="text-sm text-gray-500">No notes yet.</p>
-                ) : (
-                  yearOrder.map((yearKey) => {
-                    const files = notesByYear[yearKey];
-                    if (!files) return null;
-                    return (
-                      <div key={yearKey} className="mb-5">
-                        <h3 className="font-semibold text-blue-600 border-b mb-2">
-                          {yearLabels[yearKey]}
-                        </h3>
-                        <ul className="space-y-1">
-                          {files.map((n) => (
-                            <li key={n.id}>
-                              <a
-                                href={n.file_url}
-                                target="_blank"
-                                className="text-blue-700 hover:underline text-sm"
-                              >
-                                📘 {n.filename}
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-10">
+            
+          {/* NOTES */}
+          <UniversalSectionCard
+            title="Module Notes"
+            image="/assets/xposilearn-note.png"
+            groups={notesByYear}
+            groupLabels={yearLabels}
+            onOpen={openViewer}
+          />
 
-            {/* ================== PAST PAPERS ================== */}
-            <div className="border rounded-2xl shadow-sm overflow-hidden bg-white flex flex-col">
-              <div className="relative w-full aspect-[16/9] flex-shrink-0">
-                <Image
-                  src="/assets/xposilearn-paper.jpg"
-                  alt="Papers"
-                  fill
-                  className="object-contain bg-white p-2"
-                />
-              </div>
-              <div className="p-5 flex-1 overflow-y-auto max-h-[480px] scrollbar-thin scrollbar-thumb-blue-200 scrollbar-track-transparent">
-                <h2 className="text-xl font-semibold text-blue-700 mb-4">Past Papers</h2>
-                {papers.length === 0 ? (
-                  <p className="text-sm text-gray-500">No papers yet.</p>
-                ) : (
-                  yearOrder.map((yearKey) => {
-                    const files = papersByYear[yearKey];
-                    if (!files) return null;
-                    return (
-                      <div key={yearKey} className="mb-5">
-                        <h3 className="font-semibold text-blue-600 border-b mb-2">
-                          {yearLabels[yearKey]}
-                        </h3>
-                        <ul className="space-y-1">
-                          {files.map((p) => (
-                            <li key={p.id}>
-                              <a
-                                href={p.file_url}
-                                target="_blank"
-                                className="text-blue-700 hover:underline text-sm"
-                              >
-                                📝 {p.filename}
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
+          {/* PAPERS */}
+          <UniversalSectionCard
+            title="Past Papers"
+            image="/assets/xposilearn-paper.jpg"
+            groups={papersByYear}
+            groupLabels={yearLabels}
+            onOpen={openViewer}
+          />
 
-            {/* ================== LINKS ================== */}
-            <div className="border rounded-2xl shadow-sm overflow-hidden bg-white flex flex-col">
-              <div className="relative w-full aspect-[16/9] flex-shrink-0">
-                <Image
-                  src="/assets/xposilearn-links.png"
-                  alt="Links"
-                  fill
-                  className="object-contain bg-white p-2"
-                />
-              </div>
-              <div className="p-5 flex-1 overflow-y-auto max-h-[480px] scrollbar-thin scrollbar-thumb-blue-200 scrollbar-track-transparent">
-                <h2 className="text-xl font-semibold text-blue-700 mb-4">Useful Links</h2>
-                {links.length === 0 ? (
-                  <p className="text-sm text-gray-500">No links yet.</p>
-                ) : (
-                  Object.entries(linksByCategory).map(([cat, catLinks]) => (
-                    <div key={cat} className="mb-4">
-                      <h3 className="font-semibold text-blue-600 border-b mb-2">{cat}</h3>
-                      <ul className="space-y-1">
-                        {catLinks.map((l) => (
-                          <li key={l.id}>
-                            <a
-                              href={l.url}
-                              target="_blank"
-                              className="text-blue-700 hover:underline text-sm"
-                            >
-                              🌐 {l.name}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+          {/* LINKS */}
+          <UniversalSectionCard
+            title="Useful Links"
+            image="/assets/xposilearn-links.png"
+            groups={linksByCat}
+            groupLabels={{}}   // categories already look good
+            onOpen={openViewer}
+          />
 
-            {/* ================== ASSIGNMENTS ================== */}
-            <div className="border rounded-2xl shadow-sm overflow-hidden bg-white flex flex-col">
-              <div className="relative w-full aspect-[16/9] flex-shrink-0">
-                <Image
-                  src="/assets/xposilearn-assign.png"
-                  alt="Assignments"
-                  fill
-                  className="object-contain bg-white p-2"
-                />
-              </div>
-              <ReturnToTop />
-              <div className="p-5 flex-1 overflow-y-auto max-h-[480px] scrollbar-thin scrollbar-thumb-blue-200 scrollbar-track-transparent">
-                <h2 className="text-xl font-semibold text-blue-700 mb-4">Assignments</h2>
+          {/* ASSIGNMENTS */}
+          <UniversalSectionCard
+            title="Assignments"
+            image="/assets/xposilearn-assign.png"
+            groups={groupBy(assignments, "year")}
+            groupLabels={yearLabels}
+            showDeadlines={true}
+            onOpen={openViewer}
+          />
 
-                {assignments.length === 0 ? (
-                  <p className="text-sm text-gray-500">No assignments yet.</p>
-                ) : (
-                  <>
-                    {yearOrder.map((yearKey) => {
-                      const group = assignments.filter((a) => a.year === yearKey);
-                      if (group.length === 0) return null;
 
-                      return (
-                        <div key={yearKey} className="mb-6">
-                          <h3 className="font-semibold text-blue-600 border-b border-blue-100 pb-1 mb-3">
-                            {yearKey === "other"
-                              ? "Other"
-                              : yearKey.replace("year-", "Year ")}
-                          </h3>
-
-                          <ul className="divide-y divide-gray-200 rounded-lg overflow-hidden border border-gray-100">
-                            {group.map((a) => (
-                              <li
-                                key={a.id}
-                                className="py-2 px-2 hover:bg-gray-50 transition"
-                              >
-                                <a
-                                  href={a.file_url}
-                                  target="_blank"
-                                  className="block text-blue-700 hover:underline text-sm font-medium"
-                                >
-                                  📘 {a.title}
-                                </a>
-                                <p className="text-xs text-gray-500">
-                                  Due:{" "}
-                                  {a.deadline
-                                    ? new Date(a.deadline).toLocaleString()
-                                    : "No deadline set"}
-                                </p>
-                                {a.deadline && <Countdown deadline={a.deadline} />}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      );
-                    })}
-                  </>
-                )}
-              </div>
-            </div>
           </div>
         )}
       </main>
     </>
+  );
+}
+
+/* ---------------------------------------------------------
+   UNIVERSAL SECTION CARD (Notes, Papers, Links, Assignments)
+--------------------------------------------------------- */
+function UniversalSectionCard({
+  title,
+  image,
+  groups,
+  groupLabels,
+  onOpen,
+  showDeadlines = false,
+}: any) {
+  return (
+    <div className="border rounded-2xl shadow-sm overflow-hidden bg-white flex flex-col text-left">
+      {/* Image Banner */}
+      <div className="relative w-full aspect-[16/9]">
+        <Image
+          src={image}
+          alt={title}
+          fill
+          className="object-contain bg-white p-2"
+        />
+      </div>
+
+      {/* Content */}
+      <div className="p-5 flex-1 overflow-y-auto max-h-[600px]">
+
+        {/* Card Title */}
+        <h2 className="text-xl font-semibold text-blue-700 mb-4">
+          {title}
+        </h2>
+
+        {/* Groups */}
+        {Object.keys(groups).map((groupKey) => {
+          const items = groups[groupKey];
+          if (!items || items.length === 0) return null;
+
+          return (
+            <div key={groupKey} className="mb-6">
+              
+              {/* Group Label */}
+              <h3 className="font-semibold text-blue-600 border-b mb-2">
+                {groupLabels[groupKey] || groupKey}
+              </h3>
+
+              {/* Bordered List */}
+              <ul className="divide-y divide-gray-200 border rounded-lg overflow-hidden">
+                {items.map((item: any) => (
+                  <li
+                    key={item.id}
+                    className="py-2 px-3 hover:bg-gray-50 transition"
+                  >
+                    {/* ITEM BUTTON */}
+                    <button
+                      onClick={() => onOpen(item)}
+                      className="text-blue-700 hover:underline text-sm font-medium"
+                    >
+                      {title === "Useful Links"
+                        ? `🌐 ${item.name}`
+                        : title === "Assignments"
+                        ? `📘 ${item.title}`
+                        : `📘 ${item.filename}`}
+                    </button>
+
+                    {/* DEADLINES (Assignments only) */}
+                    {showDeadlines && item.deadline && (
+                      <>
+                        <p className="text-xs text-gray-500">
+                          Due: {new Date(item.deadline).toLocaleString()}
+                        </p>
+                        <Countdown deadline={item.deadline} />
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+
+            </div>
+          );
+        })}
+
+      </div>
+    </div>
   );
 }

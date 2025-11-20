@@ -1,17 +1,13 @@
-<style>{`
-  html {
-    scroll-behavior: auto !important;
-  }
-`}</style>
-
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import matter from "gray-matter";
 import { remark } from "remark";
 import html from "remark-html";
 import XPosiAIClient from "./XPosiAIClient";
-import PDFChatClient from "./PDFChatClient"; // ✅ NEW
+import PDFChatClient from "./PDFChatClient"; 
+import DisableAutoScrollXPosiAI from "@/components/DisableAutoScrollXposiAI";
 import ReturnToTop from "@/components/ReturnToTop";
+
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const revalidate = 0;
@@ -48,80 +44,126 @@ async function renderFileAsHtml(path: string, filename: string) {
   let htmlContent = "";
   let textForAI = "";
 
-  // 📝 Markdown
-  if (ext === "md") {
-    const text = await fileData.text();
-    const { content } = matter(text);
-    const processed = await remark().use(html).process(content);
-    htmlContent = processed.toString();
-    textForAI = content;
-  }
-  // 📄 PDF
-  else if (ext === "pdf") {
-    const { data: publicData } = supabaseAdmin
-      .storage.from("xposilearn")
-      .getPublicUrl(path);
-    const pdfUrl = publicData?.publicUrl;
-    htmlContent = `
-      <iframe src="${pdfUrl}#toolbar=0" width="100%" height="800" style="border:none; display:block; margin:0 auto;"></iframe>
-    `;
-    textForAI = `PDF document: ${filename}`;
-  }
-  // 🧾 Word Document (.docx / .doc)
-  else if (["docx", "doc"].includes(ext || "")) {
-    const { data: publicData } = supabaseAdmin
-      .storage.from("xposilearn")
-      .getPublicUrl(path);
-    const wordUrl = publicData?.publicUrl;
-    htmlContent = `
-      <iframe
-        src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
-          wordUrl
-        )}"
-        width="100%"
-        height="800"
-        align-items: center;
-        frameborder="0"
-        style="border:none; display:block; margin:0 auto;"
-      ></iframe>
-    `;
-    textForAI = `Microsoft Word document: ${filename}`;
-  }
-  // 🖼️ Image
-  else if (["jpg", "jpeg", "png", "webp", "gif"].includes(ext || "")) {
-    const { data: publicData } = supabaseAdmin
-      .storage.from("xposilearn")
-      .getPublicUrl(path);
-    const imgUrl = publicData?.publicUrl;
-    htmlContent = `
-      <div style="display:flex;justify-content:center;align-items: center;">
-        <img src="${imgUrl}" alt="${filename}" style="max-width:100%;border-radius:12px;"/>
-      </div>
-    `;
-    textForAI = `Image file: ${filename}`;
-  }
-  // 🎥 Video
-  else if (["mp4", "mov", "webm"].includes(ext || "")) {
-    const { data: publicData } = supabaseAdmin
-      .storage.from("xposilearn")
-      .getPublicUrl(path);
-    const vidUrl = publicData?.publicUrl;
-    htmlContent = `
-      <div style="display:flex;justify-content:center;">
-        <video controls width="100%" style="border-radius:12px;max-width:800px;">
-          <source src="${vidUrl}" type="video/${ext}" />
-          Your browser does not support video playback.
-        </video>
-      </div>`;
-    textForAI = `Video file: ${filename}`;
-  }
-  // 🧱 Unsupported file types
-  else {
-    htmlContent = `<p class="text-gray-600 text-center">Preview not supported for this file type: ${ext}</p>`;
-    textForAI = `Unsupported file type: ${filename}`;
-  }
+// 📝 Markdown
+if (ext === "md") {
+  const text = await fileData.text();
+  const { content } = matter(text);
+  const processed = await remark().use(html).process(content);
 
-  return { htmlContent, textForAI };
+  htmlContent = processed.toString();
+  textForAI = content;
+}
+
+// 📄 PDF
+else if (ext === "pdf") {
+  const { data: publicData } = supabaseAdmin
+    .storage.from("xposilearn")
+    .getPublicUrl(path);
+
+  const pdfUrl = publicData?.publicUrl;
+
+  htmlContent = `
+    <iframe src="${pdfUrl}#toolbar=0" width="100%" height="800" 
+      style="border:none; display:block; margin:0 auto;">
+    </iframe>
+  `;
+
+  textForAI = `PDF document: ${filename}`;
+}
+
+// 🧾 Word Documents (.docx / .doc)
+else if (["docx", "doc"].includes(ext || "")) {
+  const { data: publicData } = supabaseAdmin
+    .storage.from("xposilearn")
+    .getPublicUrl(path);
+
+  const wordUrl = publicData?.publicUrl;
+
+  htmlContent = `
+    <iframe
+      src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
+        wordUrl
+      )}"
+      width="100%"
+      height="800"
+      frameborder="0"
+      style="border:none; display:block; margin:0 auto;">
+    </iframe>
+  `;
+
+  textForAI = `Microsoft Word document: ${filename}`;
+}
+
+// 📊 PowerPoint (.pptx / .ppt)
+else if (["pptx", "ppt"].includes(ext || "")) {
+  const { data: publicData } = supabaseAdmin
+    .storage.from("xposilearn")
+    .getPublicUrl(path);
+
+  const pptUrl = publicData?.publicUrl;
+
+  htmlContent = `
+    <iframe
+      src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
+        pptUrl
+      )}"
+      width="100%"
+      height="800"
+      frameborder="0"
+      style="border:none; display:block; margin:0 auto;">
+    </iframe>
+  `;
+
+  textForAI = `PowerPoint presentation file: ${filename}`;
+}
+
+// 🖼️ Images
+else if (["jpg", "jpeg", "png", "webp", "gif"].includes(ext || "")) {
+  const { data: publicData } = supabaseAdmin
+    .storage.from("xposilearn")
+    .getPublicUrl(path);
+
+  const imgUrl = publicData?.publicUrl;
+
+  htmlContent = `
+    <div style="display:flex;justify-content:center;align-items:center;">
+      <img src="${imgUrl}" alt="${filename}" 
+        style="max-width:100%;border-radius:12px;"/>
+    </div>
+  `;
+
+  textForAI = `Image file: ${filename}`;
+}
+
+// 🎥 Videos
+else if (["mp4", "mov", "webm"].includes(ext || "")) {
+  const { data: publicData } = supabaseAdmin
+    .storage.from("xposilearn")
+    .getPublicUrl(path);
+
+  const vidUrl = publicData?.publicUrl;
+
+  htmlContent = `
+    <div style="display:flex;justify-content:center;">
+      <video controls width="100%" 
+        style="border-radius:12px;max-width:800px;">
+        <source src="${vidUrl}" type="video/${ext}" />
+        Your browser does not support video playback.
+      </video>
+    </div>
+  `;
+
+  textForAI = `Video file: ${filename}`;
+}
+
+// 🧱 Unsupported
+else {
+  htmlContent = `<p class="text-gray-600 text-center">Preview not supported for this file type: ${ext}</p>`;
+  textForAI = `Unsupported file type: ${filename}`;
+}
+
+return { htmlContent, textForAI };
+
 }
 
 /** 📘 XPosi AI Main Page */
@@ -204,6 +246,8 @@ export default async function XPosiAIPage({
 
 // Otherwise, list all papers + NEW PDF chat system
 return (
+  <>
+  <DisableAutoScrollXPosiAI />
   <main className="w-full">
 
     {/* ------------------------------------ */}
@@ -229,7 +273,8 @@ return (
               className="block p-6 rounded-2xl border border-neutral-200 bg-white shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all"
             >
               <h2 className="text-blue-700 font-bold text-lg mb-2 truncate">
-                {p.filename.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ")}
+                {(p.filename || "").replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ")}
+
               </h2>
               <p className="text-sm text-neutral-500">
                 {p.year ? `Year ${p.year}` : "General"}
@@ -281,8 +326,7 @@ return (
     </footer>
 
   </main>
+  </>
 );
-
-
 
 }
