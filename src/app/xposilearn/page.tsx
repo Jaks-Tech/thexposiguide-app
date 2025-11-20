@@ -152,30 +152,43 @@ export default function XPosiLearnPage() {
   /* ---------------------------------------------------------
      OPEN VIEWER (UNIVERSAL HANDLER: notes, papers, assignments, links)
   --------------------------------------------------------- */
+/* ---------------------------------------------------------
+   OPEN VIEWER (files open in modal, links open in new tab)
+--------------------------------------------------------- */
   const openViewer = async (item: any) => {
     let path = item.path || "";
     let filename = item.filename || item.title || item.name || "File";
     let fileUrl = item.file_url || item.url || null;
 
-    setViewedName(filename);
+    // Check: is this a LINK?
+    // Links have `url` field. Files do not.
+    if (item.url) {
+      // Open links in a new browser tab
+      window.open(item.url, "_blank", "noopener,noreferrer");
+      return;
+    }
 
     // Case 1: Supabase file (notes, papers, assignments)
     if (path) {
+      setViewedName(filename);
       const { htmlContent } = await renderFileAsHtml(path, filename);
       setViewerHtml(htmlContent);
       setSelectedFile(item);
       return;
     }
 
-    // Case 2: Direct URL (assignments or links)
+    // Case 2: Direct file URL (assignments stored without path)
     if (fileUrl) {
+      setViewedName(filename);
       const ext = filename.split(".").pop()?.toLowerCase() || "";
       let html = "";
 
       if (ext === "pdf") {
         html = `<iframe src="${fileUrl}#toolbar=0" width="100%" height="100%" style="border:none;"></iframe>`;
       } else if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) {
-        html = `<div style="display:flex;justify-content:center;align-items:center;height:100%;"><img src="${fileUrl}" style="max-width:100%;max-height:100%;" /></div>`;
+        html = `<div style="display:flex;justify-content:center;align-items:center;height:100%;">
+                  <img src="${fileUrl}" style="max-width:100%;max-height:100%;" />
+                </div>`;
       } else {
         html = `<iframe src="${fileUrl}" width="100%" height="100%" style="border:none;"></iframe>`;
       }
@@ -184,6 +197,7 @@ export default function XPosiLearnPage() {
       setSelectedFile(item);
     }
   };
+
 
   const closeViewer = () => {
     setSelectedFile(null);
