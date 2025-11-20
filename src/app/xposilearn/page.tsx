@@ -317,7 +317,7 @@ export default function XPosiLearnPage() {
     </>
   );
 }
-<ReturnToTop />
+
 /* ---------------------------------------------------------
    UNIVERSAL SECTION CARD (Notes, Papers, Links, Assignments)
 --------------------------------------------------------- */
@@ -393,8 +393,10 @@ function UniversalSectionCard({
                   </li>
                 ))}
               </ul>
+              <ReturnToTop />              
 
             </div>
+            
           );
         })}
 
