@@ -3,7 +3,7 @@ import Head from "next/head";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
-
+import ReturnToTop from "@/components/ReturnToTop";
 /* ---------------------------------------------------------
    UNIVERSAL FILE VIEWER (supports all file types)
 --------------------------------------------------------- */
@@ -317,7 +317,7 @@ export default function XPosiLearnPage() {
     </>
   );
 }
-
+<ReturnToTop />
 /* ---------------------------------------------------------
    UNIVERSAL SECTION CARD (Notes, Papers, Links, Assignments)
 --------------------------------------------------------- */
