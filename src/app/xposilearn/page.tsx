@@ -132,13 +132,44 @@ export default function XPosiLearnPage() {
 
   const UNSPECIFIED = "Unspecified";
 
+  const coalesceValue = (item: any, keys: string[]) => {
+    for (const key of keys) {
+      const value = item?.[key];
+      if (value !== undefined && value !== null && `${value}`.trim() !== "") {
+        return typeof value === "string" ? value.trim() : value;
+      }
+    }
+    return null;
+  };
+
   const normalizeItems = (items: any[]) =>
-    items.map((item) => ({
-      ...item,
-      year: item.year || UNSPECIFIED,
-      semester: item.semester || UNSPECIFIED,
-      unitName: item.unitName || item.unit || UNSPECIFIED,
-    }));
+    items.map((item) => {
+      const normalizedYear =
+        coalesceValue(item, ["year", "year_level", "yearLevel", "academicYear", "academic_year"])
+          || UNSPECIFIED;
+      const normalizedSemester =
+        coalesceValue(item, ["semester", "sem", "term", "semester_name", "semesterName"])
+          || UNSPECIFIED;
+      const normalizedUnit =
+        coalesceValue(item, [
+          "unitName",
+          "unit_name",
+          "unit",
+          "unitname",
+          "module",
+          "moduleName",
+          "module_name",
+          "course",
+          "course_name",
+        ]) || UNSPECIFIED;
+
+      return {
+        ...item,
+        year: normalizedYear,
+        semester: normalizedSemester,
+        unitName: normalizedUnit,
+      };
+    });
 
   const groupByYearSemesterUnit = (
     items: any[]
@@ -251,8 +282,19 @@ export default function XPosiLearnPage() {
 
   const linksByCat = groupBy(links, "category");
 
-  const yearOrder = ["year-1", "year-2", "year-3", UNSPECIFIED];
+  const yearOrder = [
+    "Year 1",
+    "Year 2",
+    "Year 3",
+    "year-1",
+    "year-2",
+    "year-3",
+    UNSPECIFIED,
+  ];
   const yearLabels: any = {
+    "Year 1": "Year 1",
+    "Year 2": "Year 2",
+    "Year 3": "Year 3",
     "year-1": "Year 1",
     "year-2": "Year 2",
     "year-3": "Year 3",
@@ -377,6 +419,18 @@ function UniversalSectionCard({
   };
 
   const yearKeys = getOrderedKeys(Object.keys(groups || {}), yearOrder);
+  const semesterOrder = [
+    "Semester 1",
+    "Semester 2",
+    "Sem 1",
+    "Sem 2",
+    "Sem1",
+    "Sem2",
+    "Term 1",
+    "Term 2",
+    unspecifiedLabel,
+  ];
+  const unitOrder = [unspecifiedLabel];
 
   return (
     <div className="border rounded-2xl shadow-sm overflow-hidden bg-white flex flex-col text-left">
@@ -403,7 +457,7 @@ function UniversalSectionCard({
           const semesters = groups[yearKey];
           if (!semesters) return null;
 
-          const semesterKeys = getOrderedKeys(Object.keys(semesters), [unspecifiedLabel]);
+          const semesterKeys = getOrderedKeys(Object.keys(semesters), semesterOrder);
 
           return (
             <div key={yearKey} className="mb-6">
@@ -417,7 +471,7 @@ function UniversalSectionCard({
                   const units = semesters[semesterKey];
                   if (!units) return null;
 
-                  const unitKeys = getOrderedKeys(Object.keys(units), [unspecifiedLabel]);
+                  const unitKeys = getOrderedKeys(Object.keys(units), unitOrder);
 
                   return (
                     <div key={semesterKey} className="pl-2">
