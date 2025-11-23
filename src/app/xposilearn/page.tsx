@@ -173,7 +173,7 @@ export default function XPosiLearnPage() {
 
       if (!notesRes.error) setNotes(normalizeItems(notesRes.data));
       if (!papersRes.error) setPapers(normalizeItems(papersRes.data));
-      if (!linksRes.error) setLinks(normalizeItems(linksRes.data));
+      if (!linksRes.error) setLinks(linksRes.data || []);
       if (!assignmentsRes.error) setAssignments(normalizeItems(assignmentsRes.data));
 
       setLoading(false);
@@ -238,8 +238,18 @@ export default function XPosiLearnPage() {
   /* Grouping */
   const notesByYearSemesterUnit = groupByYearSemesterUnit(notes);
   const papersByYearSemesterUnit = groupByYearSemesterUnit(papers);
-  const linksByYearSemesterUnit = groupByYearSemesterUnit(links);
   const assignmentsByYearSemesterUnit = groupByYearSemesterUnit(assignments);
+  const groupBy = (items: any[], key: string) => {
+    const grouped: Record<string, any[]> = {};
+    items.forEach((i) => {
+      const k = i[key] || "other";
+      if (!grouped[k]) grouped[k] = [];
+      grouped[k].push(i);
+    });
+    return grouped;
+  };
+
+  const linksByCat = groupBy(links, "category");
 
   const yearOrder = ["year-1", "year-2", "year-3", UNSPECIFIED];
   const yearLabels: any = {
@@ -318,13 +328,10 @@ export default function XPosiLearnPage() {
           />
 
           {/* LINKS */}
-          <UniversalSectionCard
+          <LinksSectionCard
             title="Useful Links"
             image="/assets/xposilearn-links.png"
-            groups={linksByYearSemesterUnit}
-            groupLabels={yearLabels}
-            yearOrder={yearOrder}
-            unspecifiedLabel={UNSPECIFIED}
+            groups={linksByCat}
             onOpen={openViewer}
           />
 
@@ -470,6 +477,59 @@ function UniversalSectionCard({
           );
         })}
 
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   LINKS CARD (Original grouping by category)
+--------------------------------------------------------- */
+function LinksSectionCard({ title, image, groups, onOpen }: any) {
+  return (
+    <div className="border rounded-2xl shadow-sm overflow-hidden bg-white flex flex-col text-left">
+      <div className="relative w-full aspect-[16/9]">
+        <Image
+          src={image}
+          alt={title}
+          fill
+          className="object-contain bg-white p-2"
+        />
+      </div>
+
+      <div className="p-5 flex-1 overflow-y-auto max-h-[600px]">
+        <h2 className="text-xl font-semibold text-blue-700 mb-4">{title}</h2>
+
+        {Object.keys(groups).map((groupKey) => {
+          const items = groups[groupKey];
+          if (!items || items.length === 0) return null;
+
+          return (
+            <div key={groupKey} className="mb-6">
+              <h3 className="font-semibold text-blue-600 border-b mb-2">
+                {groupKey}
+              </h3>
+
+              <ul className="divide-y divide-gray-200 border rounded-lg overflow-hidden">
+                {items.map((item: any) => (
+                  <li
+                    key={item.id}
+                    className="py-2 px-3 hover:bg-gray-50 transition"
+                  >
+                    <button
+                      onClick={() => onOpen(item)}
+                      className="text-blue-700 hover:underline text-sm font-medium"
+                    >
+                      🌐 {item.name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+
+              <ReturnToTop />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
