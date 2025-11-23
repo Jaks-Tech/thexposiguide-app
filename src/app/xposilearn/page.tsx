@@ -130,6 +130,37 @@ export default function XPosiLearnPage() {
   const [viewerHtml, setViewerHtml] = useState<string>("");
   const [viewedName, setViewedName] = useState<string>("");
 
+  const UNSPECIFIED = "Unspecified";
+
+  const normalizeItems = (items: any[]) =>
+    items.map((item) => ({
+      ...item,
+      year: item.year || UNSPECIFIED,
+      semester: item.semester || UNSPECIFIED,
+      unitName: item.unitName || item.unit || UNSPECIFIED,
+    }));
+
+  const groupByYearSemesterUnit = (
+    items: any[]
+  ): Record<string, Record<string, Record<string, any[]>>> => {
+    const grouped: Record<string, Record<string, Record<string, any[]>>> = {};
+
+    items.forEach((item) => {
+      const yearKey = item.year || UNSPECIFIED;
+      const semesterKey = item.semester || UNSPECIFIED;
+      const unitKey = item.unitName || UNSPECIFIED;
+
+      if (!grouped[yearKey]) grouped[yearKey] = {};
+      if (!grouped[yearKey][semesterKey]) grouped[yearKey][semesterKey] = {};
+      if (!grouped[yearKey][semesterKey][unitKey])
+        grouped[yearKey][semesterKey][unitKey] = [];
+
+      grouped[yearKey][semesterKey][unitKey].push(item);
+    });
+
+    return grouped;
+  };
+
   /* Load data */
   useEffect(() => {
     (async () => {
@@ -140,10 +171,10 @@ export default function XPosiLearnPage() {
         supabase.from("assignments").select("*").order("deadline", { ascending: true }),
       ]);
 
-      if (!notesRes.error) setNotes(notesRes.data);
-      if (!papersRes.error) setPapers(papersRes.data);
-      if (!linksRes.error) setLinks(linksRes.data);
-      if (!assignmentsRes.error) setAssignments(assignmentsRes.data);
+      if (!notesRes.error) setNotes(normalizeItems(notesRes.data));
+      if (!papersRes.error) setPapers(normalizeItems(papersRes.data));
+      if (!linksRes.error) setLinks(normalizeItems(linksRes.data));
+      if (!assignmentsRes.error) setAssignments(normalizeItems(assignmentsRes.data));
 
       setLoading(false);
     })();
@@ -205,26 +236,17 @@ export default function XPosiLearnPage() {
   };
 
   /* Grouping */
-  const groupBy = (items: any[], key: string) => {
-    const grouped: Record<string, any[]> = {};
-    items.forEach((i) => {
-      const k = i[key] || "other";
-      if (!grouped[k]) grouped[k] = [];
-      grouped[k].push(i);
-    });
-    return grouped;
-  };
+  const notesByYearSemesterUnit = groupByYearSemesterUnit(notes);
+  const papersByYearSemesterUnit = groupByYearSemesterUnit(papers);
+  const linksByYearSemesterUnit = groupByYearSemesterUnit(links);
+  const assignmentsByYearSemesterUnit = groupByYearSemesterUnit(assignments);
 
-  const notesByYear = groupBy(notes, "year");
-  const papersByYear = groupBy(papers, "year");
-  const linksByCat = groupBy(links, "category");
-
-  const yearOrder = ["year-1", "year-2", "year-3", "other"];
+  const yearOrder = ["year-1", "year-2", "year-3", UNSPECIFIED];
   const yearLabels: any = {
     "year-1": "Year 1",
     "year-2": "Year 2",
     "year-3": "Year 3",
-    other: "Other",
+    [UNSPECIFIED]: UNSPECIFIED,
   };
 
   return (
@@ -272,13 +294,15 @@ export default function XPosiLearnPage() {
           <p className="text-center text-gray-500">Loading…</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-10">
-            
+
           {/* NOTES */}
           <UniversalSectionCard
             title="Module Notes"
             image="/assets/xposilearn-note.png"
-            groups={notesByYear}
+            groups={notesByYearSemesterUnit}
             groupLabels={yearLabels}
+            yearOrder={yearOrder}
+            unspecifiedLabel={UNSPECIFIED}
             onOpen={openViewer}
           />
 
@@ -286,8 +310,10 @@ export default function XPosiLearnPage() {
           <UniversalSectionCard
             title="Past Papers"
             image="/assets/xposilearn-paper.jpg"
-            groups={papersByYear}
+            groups={papersByYearSemesterUnit}
             groupLabels={yearLabels}
+            yearOrder={yearOrder}
+            unspecifiedLabel={UNSPECIFIED}
             onOpen={openViewer}
           />
 
@@ -295,8 +321,10 @@ export default function XPosiLearnPage() {
           <UniversalSectionCard
             title="Useful Links"
             image="/assets/xposilearn-links.png"
-            groups={linksByCat}
-            groupLabels={{}}   // categories already look good
+            groups={linksByYearSemesterUnit}
+            groupLabels={yearLabels}
+            yearOrder={yearOrder}
+            unspecifiedLabel={UNSPECIFIED}
             onOpen={openViewer}
           />
 
@@ -304,9 +332,11 @@ export default function XPosiLearnPage() {
           <UniversalSectionCard
             title="Assignments"
             image="/assets/xposilearn-assign.png"
-            groups={groupBy(assignments, "year")}
+            groups={assignmentsByYearSemesterUnit}
             groupLabels={yearLabels}
+            yearOrder={yearOrder}
             showDeadlines={true}
+            unspecifiedLabel={UNSPECIFIED}
             onOpen={openViewer}
           />
 
@@ -326,9 +356,21 @@ function UniversalSectionCard({
   image,
   groups,
   groupLabels,
+  yearOrder = [],
+  unspecifiedLabel = "Unspecified",
   onOpen,
   showDeadlines = false,
 }: any) {
+  const getOrderedKeys = (keys: string[], preferredOrder: string[] = []) => {
+    const preferred = preferredOrder.filter((key) => keys.includes(key));
+    const remaining = keys
+      .filter((key) => !preferredOrder.includes(key))
+      .sort((a, b) => a.localeCompare(b));
+    return [...preferred, ...remaining];
+  };
+
+  const yearKeys = getOrderedKeys(Object.keys(groups || {}), yearOrder);
+
   return (
     <div className="border rounded-2xl shadow-sm overflow-hidden bg-white flex flex-col text-left">
       {/* Image Banner */}
@@ -350,53 +392,81 @@ function UniversalSectionCard({
         </h2>
 
         {/* Groups */}
-        {Object.keys(groups).map((groupKey) => {
-          const items = groups[groupKey];
-          if (!items || items.length === 0) return null;
+        {yearKeys.map((yearKey) => {
+          const semesters = groups[yearKey];
+          if (!semesters) return null;
+
+          const semesterKeys = getOrderedKeys(Object.keys(semesters), [unspecifiedLabel]);
 
           return (
-            <div key={groupKey} className="mb-6">
-              
-              {/* Group Label */}
+            <div key={yearKey} className="mb-6">
+              {/* Year Label */}
               <h3 className="font-semibold text-blue-600 border-b mb-2">
-                {groupLabels[groupKey] || groupKey}
+                {groupLabels[yearKey] || yearKey}
               </h3>
 
-              {/* Bordered List */}
-              <ul className="divide-y divide-gray-200 border rounded-lg overflow-hidden">
-                {items.map((item: any) => (
-                  <li
-                    key={item.id}
-                    className="py-2 px-3 hover:bg-gray-50 transition"
-                  >
-                    {/* ITEM BUTTON */}
-                    <button
-                      onClick={() => onOpen(item)}
-                      className="text-blue-700 hover:underline text-sm font-medium"
-                    >
-                      {title === "Useful Links"
-                        ? `🌐 ${item.name}`
-                        : title === "Assignments"
-                        ? `📘 ${item.title}`
-                        : `📘 ${item.filename}`}
-                    </button>
+              <div className="space-y-4">
+                {semesterKeys.map((semesterKey) => {
+                  const units = semesters[semesterKey];
+                  if (!units) return null;
 
-                    {/* DEADLINES (Assignments only) */}
-                    {showDeadlines && item.deadline && (
-                      <>
-                        <p className="text-xs text-gray-500">
-                          Due: {new Date(item.deadline).toLocaleString()}
-                        </p>
-                        <Countdown deadline={item.deadline} />
-                      </>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              <ReturnToTop />              
+                  const unitKeys = getOrderedKeys(Object.keys(units), [unspecifiedLabel]);
 
+                  return (
+                    <div key={semesterKey} className="pl-2">
+                      <h4 className="text-blue-500 font-medium mb-2">
+                        {semesterKey}
+                      </h4>
+
+                      <div className="space-y-3">
+                        {unitKeys.map((unitKey) => {
+                          const items = units[unitKey];
+                          if (!items || items.length === 0) return null;
+
+                          return (
+                            <div key={unitKey} className="pl-2">
+                              <p className="text-sm font-semibold text-gray-700 mb-1">
+                                {unitKey}
+                              </p>
+                              <ul className="divide-y divide-gray-200 border rounded-lg overflow-hidden">
+                                {items.map((item: any) => (
+                                  <li
+                                    key={item.id}
+                                    className="py-2 px-3 hover:bg-gray-50 transition"
+                                  >
+                                    <button
+                                      onClick={() => onOpen(item)}
+                                      className="text-blue-700 hover:underline text-sm font-medium"
+                                    >
+                                      {title === "Useful Links"
+                                        ? `🌐 ${item.name}`
+                                        : title === "Assignments"
+                                        ? `📘 ${item.title}`
+                                        : `📘 ${item.filename}`}
+                                    </button>
+
+                                    {showDeadlines && item.deadline && (
+                                      <>
+                                        <p className="text-xs text-gray-500">
+                                          Due: {new Date(item.deadline).toLocaleString()}
+                                        </p>
+                                        <Countdown deadline={item.deadline} />
+                                      </>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <ReturnToTop />
             </div>
-            
           );
         })}
 
