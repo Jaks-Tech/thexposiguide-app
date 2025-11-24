@@ -10,7 +10,7 @@ export default function PDFPage() {
         Chat With Your  File
       </h1>
 
-      <p className="text-slate-800 text-sm sm:text-base text-center max-w-3xl mb-15">
+      <p className="text-slate-500 text-sm sm:text-base text-center max-w-2xl mb-10">
         Upload any PDF or Word file (notes, protocol, guideline) and let XPosi PDF AI
         extract key points, answer questions, and explain content - directly from your file.
       </p>
