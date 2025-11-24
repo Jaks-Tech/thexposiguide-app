@@ -10,10 +10,21 @@ export default function PDFPage() {
         Chat With Your  File
       </h1>
 
-      <p className="text-slate-500 text-sm sm:text-base text-center max-w-2xl mb-10">
-        Upload any PDF or Word file (notes, protocol, guideline) and let XPosi PDF AI
-        extract key points, answer questions, and explain content - directly from your file.
+      <p className="
+        text-slate-500 
+        text-sm 
+        sm:text-base 
+        text-center 
+        max-w-lg 
+        mx-auto 
+        px-4 
+        mb-6 
+        sm:mb-10
+      ">
+        Upload any PDF or Word file (notes, protocol, guideline) and let Our PDF AI
+        extract key points, answer questions, and explain content — directly from your file.
       </p>
+
 
       {/* ⬆ UPDATED: Wider Chat Container */}
       <div className="w-full max-w-7xl bg-white shadow-2xl rounded-3xl border border-slate-200 p-8">
