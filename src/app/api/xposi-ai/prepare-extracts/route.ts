@@ -2,185 +2,211 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import mammoth from "mammoth";
 import OpenAI from "openai";
+import * as Tesseract from "tesseract.js";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.js";
+import { createCanvas } from "canvas";
 
-// pdf-extraction is CJS, so use require + any to avoid TS issues
+// pdfjs worker fix
+pdfjsLib.GlobalWorkerOptions.workerSrc = "";
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const pdf: any = require("pdf-extraction");
 
 export const runtime = "nodejs";
 
+/* ------------------------------------------------------ */
+/* Helper: Convert scanned PDF pages -> JPEG for OCR      */
+/* ------------------------------------------------------ */
+async function renderPdfPagesToImages(pdfBuffer: Buffer): Promise<Buffer[]> {
+  const uint8 = new Uint8Array(pdfBuffer);
+
+  const loadingTask = pdfjsLib.getDocument({
+    data: uint8,
+    disableWorker: true,
+  } as any);
+
+  const pdfDoc = await loadingTask.promise;
+
+  const images: Buffer[] = [];
+  for (let pg = 1; pg <= pdfDoc.numPages; pg++) {
+    const page = await pdfDoc.getPage(pg);
+    const viewport = page.getViewport({ scale: 2 });
+
+    const canvas = createCanvas(viewport.width, viewport.height);
+    const ctx = canvas.getContext("2d");
+
+    await page.render({ canvasContext: ctx as any, viewport }).promise;
+
+    images.push(canvas.toBuffer("image/jpeg"));
+  }
+  return images;
+}
+
+/* ------------------------------------------------------ */
+/* MAIN HANDLER                                           */
+/* ------------------------------------------------------ */
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { id, filename, path } = body as {
-      id?: string;
-      filename?: string;
-      path?: string;
-    };
+    const { id, filename, path } = body;
 
     if (!id || !filename || !path) {
-      return NextResponse.json(
-        { success: false, error: "Missing paper metadata (id, filename, path)." },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: "Missing paper metadata.",
+      });
     }
 
-    // ----------------------------------
-    // 0️⃣ CACHING — already prepared?
-    // ----------------------------------
-    const { data: existing, error: existingError } = await supabaseAdmin
+    /* 0️⃣ Skip if already prepared */
+    const { data: existing } = await supabaseAdmin
       .from("paper_chunks")
       .select("id")
       .eq("paper_id", id)
       .limit(1);
 
-    if (existingError) {
-      console.error("❌ Error checking existing chunks:", existingError.message);
-    }
-
-    if (existing && existing.length > 0) {
+    if (existing?.length) {
       return NextResponse.json({
         success: true,
         cached: true,
-        info: "This paper is already prepared — skipping extraction.",
+        fallback: false,
+        info: "Already prepared earlier.",
       });
     }
 
-    // ----------------------------------
-    // 1️⃣ DOWNLOAD FILE FROM STORAGE
-    // ----------------------------------
-    const { data: fileData, error: dlError } = await supabaseAdmin.storage
+    /* 1️⃣ Get public URL (bypass RLS) */
+    const { data: publicData } = supabaseAdmin.storage
       .from("xposilearn")
-      .download(path);
+      .getPublicUrl(path);
 
-    if (dlError || !fileData) {
-      console.error("❌ Download error:", dlError);
-      return NextResponse.json(
-        { success: false, error: "Failed to download file from storage." },
-        { status: 400 }
-      );
+    const fileUrl = publicData?.publicUrl;
+    if (!fileUrl) {
+      return NextResponse.json({
+        success: true,
+        fallback: true,
+        info: "Extraction failed (URL missing). Chat mode enabled.",
+      });
     }
 
-    const arrayBuffer = await fileData.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    const lowerName = filename.toLowerCase();
     let extractedText = "";
+    const res = await fetch(fileUrl);
+    const arrayBuffer = await res.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const lower = filename.toLowerCase();
 
-    // ----------------------------------
-    // 2️⃣ DOCX → plain text via mammoth
-    // ----------------------------------
-    if (lowerName.endsWith(".docx")) {
-      const result = await mammoth.extractRawText({ buffer });
-      extractedText = result.value.trim();
-    }
+    /* ------------------------------------------------------ */
+    /* 2️⃣ FILE EXTRACTION LOGIC                               */
+    /* ------------------------------------------------------ */
 
-    // ----------------------------------
-    // 3️⃣ PDF → text via pdf-extraction
-    // ----------------------------------
-    else if (lowerName.endsWith(".pdf")) {
-      const parsed = await pdf(buffer, { suppressWarnings: true });
-      extractedText = (parsed.text || "").trim();
-
-      // Simple detection for scanned/empty PDFs
-      if (!extractedText || extractedText.length < 50) {
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              "The PDF appears to be scanned / image-only. OCR is not enabled yet — please upload a text-based PDF or DOCX.",
-          },
-          { status: 400 }
-        );
+    try {
+      // DOC / DOCX
+      if (lower.endsWith(".docx") || lower.endsWith(".doc")) {
+        const r = await mammoth.extractRawText({ buffer });
+        extractedText = r.value.trim();
       }
+
+      // TXT
+      else if (lower.endsWith(".txt")) {
+        extractedText = buffer.toString("utf8").trim();
+      }
+
+      // MARKDOWN
+      else if (lower.endsWith(".md")) {
+        extractedText = buffer.toString("utf8").trim();
+      }
+
+      // PPT/PPTX
+      else if (lower.endsWith(".ppt") || lower.endsWith(".pptx")) {
+        extractedText =
+          "PPTX extraction unsupported. Convert slides to PDF or DOCX.";
+      }
+
+      // IMAGES → OCR
+      else if (
+        lower.endsWith(".png") ||
+        lower.endsWith(".jpg") ||
+        lower.endsWith(".jpeg") ||
+        lower.endsWith(".webp") ||
+        lower.endsWith(".gif")
+      ) {
+        const ocr = await Tesseract.recognize(buffer, "eng");
+        extractedText = ocr.data.text.trim();
+      }
+
+      // PDF → text → fallback OCR
+      else if (lower.endsWith(".pdf")) {
+        let pdfData = await pdf(buffer);
+        extractedText = pdfData.text?.trim() || "";
+
+        if (!extractedText || extractedText.length < 50) {
+          // OCR
+          extractedText = "";
+          const pages = await renderPdfPagesToImages(buffer);
+
+          for (const img of pages) {
+            const ocr = await Tesseract.recognize(img, "eng");
+            extractedText += "\n" + ocr.data.text;
+          }
+
+          extractedText = extractedText.trim();
+        }
+      }
+    } catch (e) {
+      console.log("⚠ Extraction attempt failed:", e);
+      extractedText = "";
     }
 
-    // ----------------------------------
-    // 4️⃣ UNSUPPORTED
-    // ----------------------------------
-    else {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unsupported file type. Only PDF and DOCX are supported for now.",
-        },
-        { status: 400 }
-      );
+    /* ------------------------------------------------------ */
+    /* 3️⃣ IF EXTRACTION FAILS → FALLBACK CHAT MODE            */
+    /* ------------------------------------------------------ */
+    if (!extractedText || extractedText.length < 10) {
+      return NextResponse.json({
+        success: true,
+        fallback: true,
+        info:
+          "❌ XPosiAI could not extract text from this file. You can still chat with this paper using AI.",
+      });
     }
 
-    if (!extractedText) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "No readable text was found. The file might be empty, encrypted, or fully image-based.",
-        },
-        { status: 400 }
-      );
-    }
+    /* ------------------------------------------------------ */
+    /* 4️⃣ Chunk + Embed (normal success flow)                 */
+    /* ------------------------------------------------------ */
 
-    // ----------------------------------
-    // 5️⃣ CLEANUP OLD CHUNKS (just in case)
-    // ----------------------------------
     await supabaseAdmin.from("paper_chunks").delete().eq("paper_id", id);
 
-    // ----------------------------------
-    // 6️⃣ CHUNKING
-    // ----------------------------------
-    const CHUNK_SIZE = 1600;
     const chunks: string[] = [];
-
+    const CHUNK_SIZE = 1600;
     for (let i = 0; i < extractedText.length; i += CHUNK_SIZE) {
       chunks.push(extractedText.slice(i, i + CHUNK_SIZE));
     }
 
-    if (chunks.length === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Extraction succeeded but produced no text chunks.",
-        },
-        { status: 400 }
-      );
-    }
-
-    // ----------------------------------
-    // 7️⃣ EMBEDDINGS + STORE
-    //    (prepared for future real RAG / Q&A)
-    // ----------------------------------
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
     for (const chunk of chunks) {
-      const embedRes = await client.embeddings.create({
+      const emb = await client.embeddings.create({
         model: "text-embedding-3-small",
         input: chunk,
       });
 
-      const embedding = embedRes.data[0].embedding;
-
-      const { error: insertError } = await supabaseAdmin
-        .from("paper_chunks")
-        .insert({
-          paper_id: id,
-          content: chunk,
-          embedding,
-        });
-
-      if (insertError) {
-        console.error("❌ Insert chunk error:", insertError.message);
-      }
+      await supabaseAdmin.from("paper_chunks").insert({
+        paper_id: id,
+        content: chunk,
+        embedding: emb.data[0].embedding,
+      });
     }
 
     return NextResponse.json({
       success: true,
-      cached: false,
-      info: `Prepared successfully. Extracted and stored ${chunks.length} chunks.`,
+      fallback: false,
+      info: `Prepared successfully. Extracted ${chunks.length} chunks.`,
     });
   } catch (err) {
     console.error("❌ PREPARE ERROR:", err);
-    return NextResponse.json(
-      { success: false, error: "Server error preparing file." },
-      { status: 500 }
-    );
+
+    // FINAL CATCH: allow chat mode even on full crash
+    return NextResponse.json({
+      success: true,
+      fallback: true,
+      info: "Extraction crashed, but you can still chat with the AI.",
+    });
   }
 }

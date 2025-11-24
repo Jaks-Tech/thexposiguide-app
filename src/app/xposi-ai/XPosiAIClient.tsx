@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -19,30 +19,59 @@ type Status =
   | "ready"
   | "generating"
   | "done"
-  | "error";
+  | "error"
+  | "chat";
 
 export default function XPosiAIClient({ paperMeta }: { paperMeta: PaperMeta }) {
+  /* ------------------------------------------------------ */
+  /* STATE MANAGEMENT                                        */
+  /* ------------------------------------------------------ */
   const [status, setStatus] = useState<Status>("idle");
+  const [activeTab, setActiveTab] = useState<"answers" | "chat">("answers");
+
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [answer, setAnswer] = useState<string | null>(null);
-  const [speaking, setSpeaking] = useState(false);
 
-  /* ------------------------------------------------------ */
-  /* Computed Flags                                          */
-  /* ------------------------------------------------------ */
+  /* Chat mode */
+  const [chatInput, setChatInput] = useState("");
+  const [chatHistory, setChatHistory] = useState<
+    { sender: "user" | "ai"; text: string }[]
+  >([]);
+  const [chatLoading, setChatLoading] = useState(false);
 
+  const chatBottomRef = useRef<HTMLDivElement | null>(null);
+
+  /* Auto-scroll chat */
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatHistory]);
+
+  /* Progress bar */
+  const isPreparing = status === "preparing";
+  const isGenerating = status === "generating";
   const canPrepare = status === "idle" || status === "error";
   const canGenerate = status === "ready";
 
+  const progress = {
+    idle: 0,
+    preparing: 40,
+    ready: 60,
+    generating: 85,
+    done: 100,
+    error: 0,
+    chat: 0,
+  }[status];
+
   /* ------------------------------------------------------ */
-  /* 1️⃣ PREPARE PAPER (OCR + Extract + Chunking)             */
+  /* 1️⃣ PREPARE PAPER                                        */
   /* ------------------------------------------------------ */
   async function handlePrepare() {
     try {
       setStatus("preparing");
       setError(null);
-      setInfo("Extracting text…");
+      setAnswer(null);
+      setInfo("Downloading and extracting text…");
 
       const res = await fetch("/api/xposi-ai/prepare-extracts", {
         method: "POST",
@@ -51,31 +80,24 @@ export default function XPosiAIClient({ paperMeta }: { paperMeta: PaperMeta }) {
       });
 
       const data = await res.json();
-      console.log("PREPARE RESPONSE:", data);
-
       if (!data.success) throw new Error(data.error);
 
-      if (data.cached) {
-        setInfo("✔ This paper was already prepared earlier.");
-      } else {
-        setInfo(data.info || "✔ Extraction completed.");
-      }
-
+      setInfo(data.cached ? "Using cached extraction." : data.info);
       setStatus("ready");
     } catch (err: any) {
-      setError(err.message || "Failed to prepare this paper.");
+      setError(err.message);
       setStatus("error");
     }
   }
 
   /* ------------------------------------------------------ */
-  /* 2️⃣ GENERATE ANSWERS                                     */
+  /* 2️⃣ GENERATE ANSWERS                                      */
   /* ------------------------------------------------------ */
   async function handleGenerate() {
     try {
       setStatus("generating");
       setError(null);
-      setInfo("Generating AI answers…");
+      setInfo("Generating complete answers…");
 
       const res = await fetch("/api/xposi-ai/generate-ai-answers", {
         method: "POST",
@@ -84,171 +106,336 @@ export default function XPosiAIClient({ paperMeta }: { paperMeta: PaperMeta }) {
       });
 
       const data = await res.json();
-      console.log("GENERATE RESPONSE:", data);
-
       if (!data.success) throw new Error(data.error);
 
       setAnswer(data.answer);
       setStatus("done");
       setInfo(null);
     } catch (err: any) {
-      setError(err.message || "Failed to generate answers.");
+      setError(err.message);
       setStatus("error");
     }
   }
 
   /* ------------------------------------------------------ */
-  /* TEXT-TO-SPEECH                                          */
+  /* 3️⃣ CHAT MODE (Messenger)                                */
+  /* ------------------------------------------------------ */
+  async function handleChatSubmit() {
+    if (!chatInput.trim()) return;
+
+    const msg = chatInput.trim();
+    setChatInput("");
+
+    // Add user bubble
+    setChatHistory((prev) => [...prev, { sender: "user", text: msg }]);
+    setChatLoading(true);
+
+    try {
+      const res = await fetch("/api/xposi-ai/chat-fallback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: msg }),
+      });
+
+      const data = await res.json();
+
+      // Add AI bubble
+      setChatHistory((prev) => [
+        ...prev,
+        { sender: "ai", text: data.answer || "I couldn't generate a response." },
+      ]);
+    } finally {
+      setChatLoading(false);
+    }
+  }
+
+  /* ------------------------------------------------------ */
+  /* 4️⃣ TEXT-TO-SPEECH                                        */
   /* ------------------------------------------------------ */
   function handleSpeech() {
     if (!answer) return;
 
-    if (speaking) {
-      window.speechSynthesis.cancel();
-      setSpeaking(false);
-      return;
-    }
-
-    const clean = answer
-      .replace(/[#_*~`>]/g, "")
-      .replace(/\[(.*?)\]\(.*?\)/g, "$1")
-      .replace(/\n+/g, ". ");
-
+    const clean = answer.replace(/\n+/g, ". ");
     const utter = new SpeechSynthesisUtterance(clean);
-    utter.lang = "en-US";
+
     utter.rate = 1;
     utter.pitch = 1;
-
-    utter.onend = () => setSpeaking(false);
-    utter.onerror = () => setSpeaking(false);
-
-    setSpeaking(true);
     window.speechSynthesis.speak(utter);
   }
 
   /* ------------------------------------------------------ */
-  /* STATUS TEXT                                             */
-  /* ------------------------------------------------------ */
-  function statusText(): string {
-    switch (status) {
-      case "idle":
-        return "Step 1: Load this paper into XPosi AI.";
-      case "preparing":
-        return info || "Extracting text…";
-      case "ready":
-        return "Step 2: Extraction complete. Generate answers.";
-      case "generating":
-        return "Generating full answers…";
-      case "done":
-        return "Answers generated below.";
-      case "error":
-        return "An error occurred. Please try again.";
-      default:
-        return "";
-    }
-  }
-
-  /* ------------------------------------------------------ */
-  /* UI                                                      */
+  /* UI                                                     */
   /* ------------------------------------------------------ */
   return (
-    <div className="mt-10 p-6 rounded-xl border border-blue-200 bg-blue-50 shadow-sm">
-      <h2 className="text-xl font-semibold text-blue-700 mb-3">
-        🤖 XPosi AI Assistant
-      </h2>
+    <div className="w-full flex flex-col p-5 rounded-xl border bg-blue-50 border-blue-200 shadow-sm">
 
-      {/* Meta */}
-      <div className="flex flex-wrap gap-2 text-xs mb-4">
-        {paperMeta.year && (
-          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full">
-            {paperMeta.year.replace("year-", "Year ")}
-          </span>
-        )}
-        {paperMeta.semester && (
-          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full">
-            S{paperMeta.semester}
-          </span>
-        )}
-        {paperMeta.unit_name && (
-          <span className="px-3 py-1 bg-gray-200 text-gray-700 rounded-full">
-            {paperMeta.unit_name}
-          </span>
-        )}
+      {/* -------------------------------------------------- */}
+      {/* TAB SWITCHER                                        */}
+      {/* -------------------------------------------------- */}
+      <div className="flex mb-6 border-b">
+        <button
+          className={`flex-1 py-2 text-center font-semibold ${
+            activeTab === "answers"
+              ? "border-b-4 border-blue-600 text-blue-700"
+              : "text-gray-500"
+          }`}
+          onClick={() => setActiveTab("answers")}
+        >
+          📘 Generate Answers
+        </button>
+
+        <button
+          className={`flex-1 py-2 text-center font-semibold ${
+            activeTab === "chat"
+              ? "border-b-4 border-blue-600 text-blue-700"
+              : "text-gray-500"
+          }`}
+          onClick={() => setActiveTab("chat")}
+        >
+          💬 Chat
+        </button>
       </div>
+    {/* ========================= */}
+    {/* TAB CONTENT */}
+    {/* ========================= */}
+        {activeTab === "answers" && (
+          <div>
+            {/* Metadata */}
+            <div className="flex flex-wrap gap-2 text-xs mb-3">
+              {paperMeta.year && (
+                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full">
+                  {paperMeta.year.replace("year-", "Year ")}
+                </span>
+              )}
+              {paperMeta.semester && (
+                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full">
+                  S{paperMeta.semester}
+                </span>
+              )}
+              {paperMeta.unit_name && (
+                <span className="px-3 py-1 bg-gray-200 text-gray-700 rounded-full">
+                  {paperMeta.unit_name}
+                </span>
+              )}
+            </div>
 
-      <p className="text-sm text-neutral-700 mb-3">{statusText()}</p>
+            {/* Progress Bar */}
+            <p className="text-sm text-gray-700 mb-2">
+              {status === "idle" && "Load this paper and begin extraction."}
+              {status === "preparing" && "Extracting text…"}
+              {status === "ready" && "Ready to generate full answers."}
+              {status === "generating" && "Generating answers…"}
+              {status === "done" && "Answers generated below."}
+              {status === "error" && "An error occurred."}
+            </p>
 
-        {/* Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 mt-4">
+            <div className="w-full h-2 bg-blue-100 rounded-full overflow-hidden">
+              <div
+                style={{ width: `${progress}%` }}
+                className={`h-full transition-all ${
+                  progress === 100 ? "bg-green-600" : "bg-blue-600"
+                }`}
+              ></div>
+            </div>
 
-          {/* PREPARE BUTTON */}
-          <button
-            type="button"
-            onClick={handlePrepare}
-            disabled={!canPrepare}
-            className={`flex-1 px-4 py-2 rounded-md font-semibold text-white transition ${
-              !canPrepare
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
+            {/* ========================= */}
+            {/* BEAUTIFUL FILLER CONTENT */}
+            {/* ========================= */}
+            {!answer && status !== "generating" && status !== "done" && (
+              <div className="mt-10 text-center text-blue-700">
+
+                {/* Animated Icon */}
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 bg-blue-600/10 rounded-full flex items-center justify-center animate-pulse">
+                    <span className="text-3xl">✨</span>
+                  </div>
+                </div>
+
+                {/* Heading */}
+                <h3 className="text-xl font-semibold mb-2">
+                  XPosi AI Is Ready To Assist
+                </h3>
+
+                {/* Description */}
+                <p className="text-sm text-neutral-600 max-w-sm mx-auto mb-6">
+                  Extract the text to begin generating structured, step-by-step answers.
+                  After extraction, switch to Chat mode to ask deeper questions.
+                </p>
+
+                {/* Feature Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto mt-6">
+
+                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl shadow-sm">
+                    <p className="text-blue-700 font-medium mb-1">🧠 Smart Extraction</p>
+                    <p className="text-xs text-neutral-600">
+                      Reads your paper and prepares the content for analysis.
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl shadow-sm">
+                    <p className="text-blue-700 font-medium mb-1">📘 AI Answers</p>
+                    <p className="text-xs text-neutral-600">
+                      Generates clean, structured answers mapped to your questions.
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl shadow-sm">
+                    <p className="text-blue-700 font-medium mb-1">💬 Chat Mode</p>
+                    <p className="text-xs text-neutral-600">
+                      Ask follow-up questions and get clarifications anytime.
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl shadow-sm">
+                    <p className="text-blue-700 font-medium mb-1">📂 File Support</p>
+                    <p className="text-xs text-neutral-600">
+                      Works with PDF, Word, PowerPoint, and images.
+                    </p>
+                  </div>
+
+                </div>
+
+              </div>
+            )}
+
+            {/* ========================= */}
+            {/* Buttons */}
+            {/* ========================= */}
+            <div className="flex flex-col sm:flex-row gap-3 mt-6">
+              <button
+                disabled={!canPrepare}
+                onClick={handlePrepare}
+                className={`flex-1 py-2 font-semibold text-white rounded-md ${
+                  !canPrepare ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+                }`}
+              >
+                {isPreparing ? "Preparing…" : "1️⃣ Upload this Paper"}
+              </button>
+
+              <button
+                disabled={!canGenerate}
+                onClick={handleGenerate}
+                className={`flex-1 py-2 font-semibold text-white rounded-md ${
+                  !canGenerate ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"
+                }`}
+              >
+                {isGenerating ? "Generating…" : "2️⃣ Generate Answers"}
+              </button>
+            </div>
+
+            {/* Info */}
+            {info && status !== "done" && (
+              <div className="mt-4 text-xs p-3 bg-gray-50 border rounded">
+                {info}
+              </div>
+            )}
+
+            {/* Error */}
+            {error && (
+              <div className="mt-4 text-sm p-3 bg-red-50 text-red-700 border rounded">
+                {error}
+              </div>
+            )}
+
+            {/* Output */}
+            {answer && (
+              <div className="mt-6 p-5 bg-white border rounded shadow">
+                <div className="prose">
+                  <Markdown remarkPlugins={[remarkGfm]}>
+                    {answer}
+                  </Markdown>
+                </div>
+                <button
+                  onClick={handleSpeech}
+                  className="mt-4 px-4 py-2 bg-green-600 text-white rounded"
+                >
+                  🔊 Read Answer
+                </button>
+              </div>
+            )}
+
+          </div>
+        )}
+
+
+{/* -------------------------------------------------- */}
+{/* TAB 2: CHAT MODE (MESSENGER UPGRADED)              */}
+{/* -------------------------------------------------- */}
+{activeTab === "chat" && (
+  <div className="flex flex-col h-[450px] border rounded-lg bg-white p-3">
+
+    {/* Chat message list */}
+    <div className="flex-1 overflow-y-auto space-y-4 p-2">
+      {chatHistory.map((msg, i) => (
+        <div
+          key={i}
+          className={`flex items-start gap-2 ${
+            msg.sender === "user" ? "justify-end" : "justify-start"
+          }`}
+        >
+          {/* Avatar */}
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm shadow ${
+              msg.sender === "user" ? "bg-blue-600" : "bg-emerald-600"
             }`}
           >
-            {status === "preparing" ? "Preparing…" : "1️⃣ Upload & Extract Text"}
-          </button>
-
-          {/* GENERATE BUTTON */}
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={!canGenerate}
-            className={`flex-1 px-4 py-2 rounded-md font-semibold text-white transition ${
-              !canGenerate
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-emerald-600 hover:bg-emerald-700"
-            }`}
-          >
-            {status === "generating" ? "Generating…" : "2️⃣ Generate Full Answers"}
-          </button>
-
-        </div>
-
-      {/* Error */}
-      {error && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      {/* Info */}
-      {info && !error && status !== "done" && (
-        <div className="mt-3 p-3 bg-gray-50 border border-gray-200 text-xs font-mono rounded">
-          {info}
-        </div>
-      )}
-
-      {/* Output */}
-      {answer && (
-        <div className="mt-6 p-5 bg-white border rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold text-emerald-700 mb-3">
-            ✅ Generated Answers
-          </h3>
-
-          <div className="prose prose-sm">
-            <Markdown remarkPlugins={[remarkGfm]}>{answer}</Markdown>
+            {msg.sender === "user" ? "🧑" : "🤖"}
           </div>
 
-          <button
-            type="button"
-            onClick={handleSpeech}
-            className={`mt-4 px-4 py-2 rounded-md text-sm text-white ${
-              speaking
-                ? "bg-red-600 hover:bg-red-700"
-                : "bg-green-600 hover:bg-green-700"
+          {/* Bubble */}
+          <div
+            className={`max-w-[75%] px-4 py-2 rounded-2xl prose prose-sm break-words shadow-sm ${
+              msg.sender === "user"
+                ? "bg-blue-200 text-white rounded-br-none"
+                : "bg-gray-100 text-gray-900 rounded-bl-none"
             }`}
           >
-            {speaking ? "⏹ Stop Reading" : "🔊 Read Answer"}
-          </button>
+            <Markdown remarkPlugins={[remarkGfm]}>{msg.text}</Markdown>
+          </div>
+        </div>
+      ))}
+
+      {/* Typing Indicator */}
+      {chatLoading && (
+        <div className="flex items-center gap-2 text-gray-500 text-sm">
+          <span className="animate-pulse">🤖 Typing…</span>
         </div>
       )}
+
+      <div ref={chatBottomRef} />
+    </div>
+
+    {/* Composer */}
+    <div className="border-t pt-3 mt-3">
+      <textarea
+        value={chatInput}
+        placeholder="Ask anything…"
+        className="w-full border rounded-lg p-3 text-sm resize-none overflow-hidden focus:ring-2 focus:ring-blue-500"
+        onChange={(e) => {
+          setChatInput(e.target.value);
+
+          // Auto-expand textarea
+          const el = e.target;
+          el.style.height = "auto";
+          el.style.height = `${el.scrollHeight}px`;
+        }}
+        rows={1}
+        style={{ minHeight: "42px", maxHeight: "200px" }}
+      />
+
+      <button
+        onClick={handleChatSubmit}
+        disabled={chatLoading || !chatInput.trim()}
+        className="mt-2 w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center gap-2"
+      >
+        {chatLoading && (
+          <span className="w-4 h-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
+        )}
+        {chatLoading ? "Sending…" : "Send 💬"}
+      </button>
+    </div>
+  </div>
+)}  
     </div>
   );
 }
