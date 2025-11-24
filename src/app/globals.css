@@ -211,3 +211,8 @@ select option {
 .animate-scaleIn {
   animation: scaleIn 0.25s ease-out;
 }
+@keyframes scan {
+  0% { transform: translateY(40px); }
+  50% { transform: translateY(-40px); }
+  100% { transform: translateY(40px); }
+}

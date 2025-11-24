@@ -4,7 +4,6 @@ import matter from "gray-matter";
 import { remark } from "remark";
 import html from "remark-html";
 import XPosiAIClient from "./XPosiAIClient";
-import PDFChatClient from "./PDFChatClient";
 import DisableAutoScrollXPosiAI from "@/components/DisableAutoScrollXposiAI";
 import ReturnToTop from "@/components/ReturnToTop";
 import UnitBadge from "@/components/XposiAIColorCode";
@@ -249,15 +248,75 @@ export default async function XPosiAIPage({ searchParams }: any) {
     );
   }
 
-  /* ========= DEFAULT (LIST OF PAPERS) ========= */
-  return (
-    <>
-      <DisableAutoScrollXPosiAI />
+/* ========= DEFAULT (LIST OF PAPERS) ========= */
+return (
+  <>
+    <DisableAutoScrollXPosiAI />
 
-      <main className="w-full">
-        {/* Your existing default page code unchanged */}
-        {/* ... */}
-      </main>
-    </>
-  );
-}
+    <main className="w-full bg-white py-16">
+      <div className="mx-auto max-w-[1600px] px-6 lg:px-12">
+
+        <h1 className="text-4xl sm:text-5xl font-extrabold text-blue-700 text-center mb-4">
+          XPosi AI
+        </h1>
+
+        <p className="text-base sm:text-lg text-gray-500 text-center mb-12">
+          Smart AI assistance for your past papers — learn faster, study smarter.
+        </p>
+
+        {/* Papers Grid */}
+        <div className="
+          grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4
+          gap-8 sm:gap-10 lg:gap-12
+          px-2 sm:px-4
+        ">
+
+          {papers.map((p) => (
+            <a
+              key={p.id}
+              href={`/xposi-ai?file=${encodeURIComponent(p.filename)}`}
+              className="block p-6 rounded-3xl border border-neutral-200 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-blue-200"
+            >
+              <h2 className="text-blue-700 font-semibold text-lg mb-3 leading-snug h-12 overflow-hidden">
+                {(p.filename || "")
+                  .replace(/\.[^/.]+$/, "")
+                  .replace(/[-_]/g, " ")
+                  .substring(0, 60)}
+                {p.filename.length > 60 ? "…" : ""}
+              </h2>
+
+              <div className="flex flex-wrap gap-2 mt-2">
+                {p.year && (
+                  <span className="text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
+                    {p.year.replace("year-", "Year ")}
+                  </span>
+                )}
+
+                {p.semester && (
+                  <span className="text-xs px-3 py-1 bg-green-100 text-green-700 rounded-full font-medium">
+                    S{p.semester}
+                  </span>
+                )}
+
+                {p.unit_name && <UnitBadge name={p.unit_name} />}
+              </div>
+            </a>
+          ))}
+        </div>
+
+      </div>
+
+        {/* RETURN TO TOP BUTTON */}
+        <ReturnToTop />
+
+        {/* FOOTER */}
+          <footer className="w-full bg-white border-t border-neutral-200 py-6 text-center text-sm text-neutral-500">
+           <p>
+            <strong>XPosi AI</strong> © {new Date().getFullYear()} — Educational use only.
+             </p>
+            </footer>
+
+            </main>
+            </>
+            );
+            } 

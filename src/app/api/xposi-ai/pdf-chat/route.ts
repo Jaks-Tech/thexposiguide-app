@@ -19,59 +19,77 @@ export async function POST(req: Request) {
       apiKey: process.env.OPENAI_API_KEY!,
     });
 
-    // -------------------------------------------------------
-    // 1️⃣ Generate the query embedding (1536 dimensions)
-    // -------------------------------------------------------
+    /* ---------------- 1. Create embedding for query ---------------- */
     const qEmbed = await openai.embeddings.create({
-      model: "text-embedding-3-small", // MUST MATCH SUPABASE VECTOR SIZE
+      model: "text-embedding-3-small",
       input: question,
     });
 
     const queryEmbedding = qEmbed.data[0].embedding;
 
-    // -------------------------------------------------------
-    // 2️⃣ Query most similar chunks from Supabase
-    // -------------------------------------------------------
-    const { data, error } = await supabaseAdmin.rpc("match_pdf_chunks", {
-      input_pdf_id: pdf_id,
-      query_embedding: queryEmbedding,
-      match_count: 6,
-    });
+    /* ---------------- 2. Find matching chunks ---------------- */
+    const { data: matches, error } = await supabaseAdmin.rpc(
+      "match_pdf_chunks",
+      {
+        input_pdf_id: pdf_id,
+        query_embedding: queryEmbedding,
+        match_count: 6,
+      }
+    );
 
     if (error) {
-      console.error("❌ match_pdf_chunks error:", error);
+      console.error("❌ match_pdf_chunks:", error);
       return NextResponse.json(
-        { error: "Vector search failed. Check embeddings." },
+        { error: "Vector search failed." },
         { status: 500 }
       );
     }
 
-    const contextText =
-      data?.map((row: any) => row.content).join("\n\n") || "";
+    const context = matches?.map((m: any) => m.content).join("\n\n") || "";
 
-    // -------------------------------------------------------
-    // 3️⃣ Ask OpenAI using ONLY the PDF context
-    // -------------------------------------------------------
+    /* ---------------- 3. If context empty → general knowledge ---------------- */
+    if (!context.trim()) {
+      const fallback = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        temperature: 0.4,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are XPosi PDF AI. The PDF did not contain info relevant to the question. " +
+              "Provide a correct radiography-based general answer without mentioning any extraction or missing data.",
+          },
+          { role: "user", content: question },
+        ],
+      });
+
+      return NextResponse.json({
+        answer: fallback.choices[0].message?.content ?? "No answer returned.",
+      });
+    }
+
+    /* ---------------- 4. PDF-only answer ---------------- */
     const chatRes = await openai.chat.completions.create({
       model: "gpt-4o-mini",
+      temperature: 0.1,
       messages: [
         {
           role: "system",
           content:
-            "You are XPosi PDF AI. You ONLY answer using the provided PDF context. If the answer is not in the context, reply: 'The information is not available in this PDF.'",
+            "You are XPosi PDF AI. You MUST answer using ONLY the PDF context. " +
+            "If the answer cannot be found in the PDF, reply: 'The information is not available in this PDF.'",
         },
         {
           role: "user",
-          content: `PDF context:\n${contextText}\n\nQuestion: ${question}`,
+          content: `PDF context:\n${context}\n\nUser question: ${question}`,
         },
       ],
-      temperature: 0.1,
     });
 
-    const answer = chatRes.choices[0]?.message?.content || "";
-
-    return NextResponse.json({ answer });
-  } catch (err: any) {
+    return NextResponse.json({
+      answer: chatRes.choices[0]?.message?.content || "",
+    });
+  } catch (err) {
     console.error("❌ pdf-chat error:", err);
     return NextResponse.json(
       { error: "Server error during chat." },

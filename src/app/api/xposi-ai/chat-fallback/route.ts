@@ -5,11 +5,7 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { question, filename } = body as {
-      question?: string;
-      filename?: string;
-    };
+    const { question, filename } = await req.json();
 
     if (!question) {
       return NextResponse.json(
@@ -18,44 +14,36 @@ export async function POST(req: Request) {
       );
     }
 
-    const client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY!,
-    });
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-    /* ------------------------------------------------------ */
-    /* 🧠 CHAT FALLBACK MODE                                   */
-    /* ------------------------------------------------------ */
-    const completion = await client.chat.completions.create({
+    const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: 0.5,
+      temperature: 0.4,
       messages: [
         {
           role: "system",
           content:
-            `You are XPosi AI — a friendly Radiography tutor.` +
-            `You are answering questions directly because the system could not extract text from the document.` +
-            `Do NOT mention embeddings, OCR, extraction, or system failures.` +
-            `Answer clearly using structured radiography knowledge.` +
-            (filename ? `The user is asking about a document named: ${filename}.` : "")
+            "You are XPosi AI — a friendly radiography tutor. " +
+            "The uploaded file could not be processed or had no readable text. " +
+            "Provide accurate general radiography knowledge. " +
+            "NEVER mention extraction failures, OCR, embeddings, or missing text.",
         },
         {
           role: "user",
-          content: question
-        }
-      ]
+          content:
+            (filename ? `File: ${filename}\n\n` : "") + question,
+        },
+      ],
     });
-
-    const answer = completion.choices?.[0]?.message?.content;
 
     return NextResponse.json({
       success: true,
-      answer: answer || "I could not generate a response.",
+      answer: completion.choices[0].message?.content ?? "",
     });
-
   } catch (err) {
-    console.error("❌ CHAT FALLBACK ERROR:", err);
+    console.error("❌ chat-fallback error:", err);
     return NextResponse.json(
-      { success: false, error: "Server error during chat." },
+      { success: false, error: "Server error during fallback chat." },
       { status: 500 }
     );
   }

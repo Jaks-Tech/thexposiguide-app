@@ -323,12 +323,12 @@ export default function XPosiAIClient({ paperMeta }: { paperMeta: PaperMeta }) {
               </button>
             </div>
 
-            {/* Info */}
-            {info && status !== "done" && (
-              <div className="mt-4 text-xs p-3 bg-gray-50 border rounded">
-                {info}
-              </div>
-            )}
+                {/* Info */}
+                {info && status !== "done" && status !== "chat" && (
+                  <div className="mt-3 p-3 bg-gray-50 border text-xs rounded font-mono">
+                    {info}
+                  </div>
+                )}
 
             {/* Error */}
             {error && (
@@ -362,7 +362,7 @@ export default function XPosiAIClient({ paperMeta }: { paperMeta: PaperMeta }) {
 {/* TAB 2: CHAT MODE (MESSENGER UPGRADED)              */}
 {/* -------------------------------------------------- */}
 {activeTab === "chat" && (
-  <div className="flex flex-col h-[450px] border rounded-lg bg-white p-3">
+  <div className="flex flex-col max-h-[70vh] min-h-[300px] border rounded-lg bg-white p-3">
 
     {/* Chat message list */}
     <div className="flex-1 overflow-y-auto space-y-4 p-2">
