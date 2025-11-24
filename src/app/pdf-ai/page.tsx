@@ -7,7 +7,7 @@ export default function PDFPage() {
 
       {/* PAGE TITLE */}
       <h1 className="text-3xl sm:text-4xl font-bold text-blue-700 mb-3">
-        Chat With Your File (PDF, Word, etc.)
+        Chat With Your  File
       </h1>
 
       <p className="text-slate-800 text-sm sm:text-base text-center max-w-3xl mb-15">
