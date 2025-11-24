@@ -64,6 +64,9 @@ export default function AdminDashboard() {
   const [year, setYear] = useState("year-1");
   const [module, setModule] = useState("upper");
   const [isUploading, setIsUploading] = useState(false);
+  const [semester, setSemester] = useState(1);
+  const [unitName, setUnitName] = useState("");
+
 
   const [linkData, setLinkData] = useState({ name: "", url: "", category: "" });
   const [links, setLinks] = useState<any[]>([]);
@@ -142,54 +145,66 @@ export default function AdminDashboard() {
     setTimeout(() => setToast(""), 3500);
   }
 
-  /* ---------------- UPLOAD HANDLER ---------------- */
-  async function handleUpload(e: React.FormEvent) {
-    e.preventDefault();
-    if (!files.length) return showToast("Select at least one file first.");
 
-    setIsUploading(true);
-    setUploadProgress({});
+async function handleUpload(e: React.FormEvent) {
+  e.preventDefault();
+  if (!files.length) return showToast("Select at least one file first.");
 
-    try {
-      for (const f of files) {
-        // start progress at 10%
-        setUploadProgress((prev) => ({ ...prev, [f.name]: 10 }));
+  setIsUploading(true);
+  setUploadProgress({});
 
-        const formData = new FormData();
-        formData.append("file", f);
-        formData.append("category", category);
-        if (image) formData.append("image", image);
+  try {
+    for (const f of files) {
+      // start progress at 10%
+      setUploadProgress((prev) => ({ ...prev, [f.name]: 10 }));
+
+      const formData = new FormData();
+
+      // REQUIRED
+      formData.append("file", f);
+      formData.append("category", category);
+
+      // NEW REQUIRED FIELDS
+      formData.append("year", year);                   // now "year-1" correctly
+      formData.append("semester", String(semester));   // 1 or 2
+      formData.append("unit_name", unitName || "");    // "MPC I" etc.
+
+      // MODULE SECTION (Markdown)
+      if (category === "module") {
         formData.append("module", module);
-        formData.append("year", year);
-
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        const data = await res.json();
-
-        if (data.success) {
-          setUploadProgress((prev) => ({ ...prev, [f.name]: 100 }));
-          showToast(`Uploaded: ${f.name}`);
-          pushActivity(`Uploaded file: ${f.name}`);
-          // if you still have logActivity:
-          // await logActivity(`Uploaded file: ${f.name}`);
-        } else {
-          setUploadProgress((prev) => ({ ...prev, [f.name]: 100 }));
-          showToast(`Upload failed: ${f.name}`);
-        }
       }
 
-      setFiles([]);
-      setImage(null);
-    } catch (err) {
-      console.error(err);
-      showToast("Upload error.");
-    } finally {
-      setIsUploading(false);
+      // OPTIONAL IMAGE
+      if (image) {
+        formData.append("image", image);
+      }
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setUploadProgress((prev) => ({ ...prev, [f.name]: 100 }));
+        showToast(`Uploaded: ${f.name}`);
+        pushActivity(`Uploaded file: ${f.name}`);
+      } else {
+        setUploadProgress((prev) => ({ ...prev, [f.name]: 100 }));
+        showToast(`Upload failed: ${f.name}`);
+      }
     }
+
+    setFiles([]);
+    setImage(null);
+  } catch (err) {
+    console.error(err);
+    showToast("Upload error.");
+  } finally {
+    setIsUploading(false);
   }
+}
 
 
   /* ---------------- DELETE LINK ---------------- */
@@ -384,16 +399,27 @@ export default function AdminDashboard() {
           setFiles={setFiles}
           image={image}
           setImage={setImage}
+
           category={category}
           setCategory={setCategory}
+
           year={year}
           setYear={setYear}
+
+          semester={semester}
+          setSemester={setSemester}
+
+          unitName={unitName}
+          setUnitName={setUnitName}
+
           module={module}
           setModule={setModule}
+
           isUploading={isUploading}
           handleUpload={handleUpload}
           uploadProgress={uploadProgress}
         />
+
 
         </AdminSection>
 

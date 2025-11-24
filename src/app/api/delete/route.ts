@@ -4,21 +4,30 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-/** Delete file by unique ID */
+/**
+ * Delete a file from:
+ *  - Supabase Storage (xposilearn bucket)
+ *  - uploads table (notes, papers, modules)
+ */
 export async function POST(req: Request) {
   try {
     const { id } = await req.json();
 
     if (!id) {
-      return NextResponse.json({ error: "Missing file ID" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing file ID" },
+        { status: 400 }
+      );
     }
 
     const bucket = "xposilearn";
 
-    // 1️⃣ Fetch file entry by ID
+    // -----------------------------------------------------
+    // 1️⃣ Fetch DB record (now includes semester + unit_name)
+    // -----------------------------------------------------
     const { data: entry, error: fetchError } = await supabaseAdmin
       .from("uploads")
-      .select("id, filename, path")
+      .select("id, filename, path, category, year, semester, unit_name, module")
       .eq("id", id)
       .maybeSingle();
 
@@ -29,27 +38,31 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2️⃣ Delete from Storage
+    // -----------------------------------------------------
+    // 2️⃣ Delete file from Supabase storage
+    // -----------------------------------------------------
     const { error: storageError } = await supabaseAdmin.storage
       .from(bucket)
-      .remove([entry.path]);
+      .remove([entry.path]); // always safe — full path stored
 
     if (storageError) {
       console.error("❌ Storage delete error:", storageError.message);
       return NextResponse.json(
-        { error: "Failed to delete from storage" },
+        { error: "Failed to delete file from storage" },
         { status: 500 }
       );
     }
 
-    // 3️⃣ Delete from uploads table
+    // -----------------------------------------------------
+    // 3️⃣ Delete row from uploads table
+    // -----------------------------------------------------
     const { error: dbError } = await supabaseAdmin
       .from("uploads")
       .delete()
       .eq("id", id);
 
     if (dbError) {
-      console.error("❌ DB delete error:", dbError.message);
+      console.error("❌ Database delete error:", dbError.message);
       return NextResponse.json(
         { error: "Failed to delete record from database" },
         { status: 500 }
@@ -62,7 +75,7 @@ export async function POST(req: Request) {
       message: `✅ Successfully deleted ${entry.filename}`,
     });
   } catch (err: any) {
-    console.error("❌ Unexpected error:", err);
+    console.error("❌ Unexpected delete error:", err);
     return NextResponse.json(
       { error: "Unexpected server error", details: err.message },
       { status: 500 }

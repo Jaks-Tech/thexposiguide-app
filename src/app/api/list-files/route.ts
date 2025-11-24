@@ -4,22 +4,17 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-/**
- * 📂 Lists uploaded files from Supabase based on category/year/module.
- * Used by the Admin Dashboard dropdown for file deletion.
- */
 export async function POST(req: Request) {
   try {
     let body = null;
 
-    // ✅ Safely parse JSON, handle empty or invalid body
     try {
       body = await req.json();
     } catch {
       body = {};
     }
 
-    const { category, year, module } = body;
+    const { category, year, semester, unit_name, module } = body;
 
     if (!category) {
       return NextResponse.json(
@@ -28,12 +23,19 @@ export async function POST(req: Request) {
       );
     }
 
-    // 🧠 Query uploads metadata
+    // -------------------------------------------------------------
+    // BASE QUERY
+    // -------------------------------------------------------------
     let query = supabaseAdmin
       .from("uploads")
-      .select("id, filename, path, category, year, module")
+      .select(
+        "id, filename, path, category, year, semester, unit_name, module"
+      )
       .eq("category", category);
 
+    // -------------------------------------------------------------
+    // NOTES & PAPERS FILTERING
+    // -------------------------------------------------------------
     if (category === "notes" || category === "papers") {
       if (!year) {
         return NextResponse.json(
@@ -41,42 +43,67 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
+
+      // match correct year: year-1 / year-2 / year-3
       query = query.eq("year", year);
+
+      // semester is numeric
+      if (semester) {
+        query = query.eq("semester", semester);
+      }
+
+      // FIXED: partial search + wildcards
+      if (unit_name && unit_name.trim() !== "") {
+        query = query.ilike("unit_name", `%${unit_name.trim()}%`);
+      }
     }
 
+    // -------------------------------------------------------------
+    // MODULE MARKDOWN (upper / lower / pelvic)
+    // -------------------------------------------------------------
     if (category === "module") {
       if (!module) {
         return NextResponse.json(
-          { error: "Missing module for markdown listing." },
+          { error: "Missing module type for markdown listing." },
           { status: 400 }
         );
       }
+
       query = query.eq("module", module);
     }
 
-    const { data, error } = await query.order("created_at", { ascending: false });
+    // -------------------------------------------------------------
+    // EXECUTE QUERY
+    // -------------------------------------------------------------
+    const { data, error } = await query.order("created_at", {
+      ascending: false,
+    });
 
     if (error) {
-      console.error("❌ Supabase list-files error:", error.message);
+      console.error("❌ list-files error:", error.message);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     if (!data || data.length === 0) {
-      console.warn(`⚠️ No files found for ${category} (${year || module || "none"})`);
       return NextResponse.json({ files: [] });
     }
 
-    // ✅ Map clean results
+    // -------------------------------------------------------------
+    // CLEAN RETURN
+    // -------------------------------------------------------------
     const files = data.map((row) => ({
       id: row.id,
       filename: row.filename,
       path: row.path,
       category: row.category,
       year: row.year,
+      semester: row.semester,
+      unit_name: row.unit_name,
       module: row.module,
     }));
 
     return NextResponse.json({ files });
+
   } catch (err: any) {
     console.error("❌ Error listing files:", err);
     return NextResponse.json(

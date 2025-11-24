@@ -7,18 +7,28 @@ import XPosiAIClient from "./XPosiAIClient";
 import PDFChatClient from "./PDFChatClient"; 
 import DisableAutoScrollXPosiAI from "@/components/DisableAutoScrollXposiAI";
 import ReturnToTop from "@/components/ReturnToTop";
-
+import UnitBadge from "@/components/XposiAIColorCode";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const revalidate = 0;
 
 /** 🧠 List all papers from Supabase (any file type) */
 async function listAllPapers() {
-  const { data, error } = await supabaseAdmin
-    .from("uploads")
-    .select("id, filename, file_url, path, year, category")
-    .eq("category", "papers")
-    .order("created_at", { ascending: false });
+    const { data, error } = await supabaseAdmin
+      .from("uploads")
+      .select(`
+        id,
+        filename,
+        file_url,
+        path,
+        year,
+        semester,
+        unit_name,
+        category
+      `)
+      .eq("category", "papers")
+      .order("created_at", { ascending: false });
+
 
   if (error) {
     console.error("❌ Error fetching papers:", error.message);
@@ -254,37 +264,71 @@ return (
     {/* SECTION 1 — Past Papers (WHITE)      */}
     {/* ------------------------------------ */}
 
-    <section className="w-full bg-white py-16">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <section className="w-full bg-white py-16">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
 
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-blue-700 text-center mb-4">
-          XPosi AI
-        </h1>
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-blue-700 text-center mb-4">
+              XPosi AI
+            </h1>
 
-        <p className="text-base sm:text-lg text-gray-500 text-center mb-12">
-          Smart AI assistance for your past papers — learn faster, study smarter.
-        </p>
+            <p className="text-base sm:text-lg text-gray-500 text-center mb-12">
+              Smart AI assistance for your past papers — learn faster, study smarter.
+            </p>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {papers.map((p) => (
-            <a
-              key={p.id}
-              href={`/xposi-ai?file=${encodeURIComponent(p.filename)}`}
-              className="block p-6 rounded-2xl border border-neutral-200 bg-white shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all"
-            >
-              <h2 className="text-blue-700 font-bold text-lg mb-2 truncate">
-                {(p.filename || "").replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ")}
+            {/* ⭐ Improved Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
 
-              </h2>
-              <p className="text-sm text-neutral-500">
-                {p.year ? `Year ${p.year}` : "General"}
-              </p>
-            </a>
-          ))}
-        </div>
+              {papers.map((p) => (
+                <a
+                  key={p.id}
+                  href={`/xposi-ai?file=${encodeURIComponent(p.filename)}`}
+                  className="
+                    block p-6 rounded-3xl 
+                    border border-neutral-200 
+                    bg-white
+                    shadow-sm 
+                    transition-all duration-300 
+                    hover:shadow-xl hover:-translate-y-1 hover:border-blue-200
+                  "
+                >
+                  {/* FILE TITLE */}
+                  <h2 className="text-blue-700 font-semibold text-lg mb-3 leading-snug h-12 overflow-hidden">
+                    {(p.filename || "")
+                      .replace(/\.[^/.]+$/, "")
+                      .replace(/[-_]/g, " ")
+                      .substring(0, 60)}
+                    {p.filename.length > 60 ? "…" : ""}
+                  </h2>
 
-      </div>
-    </section>
+                  {/* BADGES */}
+                  <div className="flex flex-wrap gap-2 mt-2">
+
+                    {/* YEAR */}
+                    {p.year && (
+                      <span className="text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
+                        {p.year.replace("year-", "Year ")}
+                      </span>
+                    )}
+
+                    {/* SEMESTER */}
+                    {p.semester && (
+                      <span className="text-xs px-3 py-1 bg-green-100 text-green-700 rounded-full font-medium">
+                        S{p.semester}
+                      </span>
+                    )}
+
+                    {/* UNIT (Color-coded) */}
+                    {p.unit_name && <UnitBadge name={p.unit_name} />}
+                  </div>
+
+                </a>
+              ))}
+
+            </div>
+          </div>
+        </section>
+
+
 
     {/* ------------------------------------ */}
     {/* SECTION 2 — Chat with Your PDF (BLUE) */}

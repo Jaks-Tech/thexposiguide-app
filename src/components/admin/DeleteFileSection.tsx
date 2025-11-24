@@ -8,15 +8,20 @@ export default function DeleteFileSection({
   handleFileDelete: (e: React.FormEvent) => void;
 }) {
   const [files, setFiles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // IMPORTANT: Year must match DB stored values: year-1 / year-2 / year-3 / other
   const [filters, setFilters] = useState({
     category: "notes",
     year: "year-1",
+    semester: 1,
+    unit_name: "",
     module: "upper",
   });
-  const [loading, setLoading] = useState(true);
 
   async function loadFiles() {
     setLoading(true);
+
     try {
       const res = await fetch("/api/list-files", {
         method: "POST",
@@ -29,9 +34,11 @@ export default function DeleteFileSection({
     } catch (err) {
       console.error("❌ Failed to load files:", err);
     }
+
     setLoading(false);
   }
 
+  // Reload list when filters change
   useEffect(() => {
     loadFiles();
   }, [filters]);
@@ -44,16 +51,23 @@ export default function DeleteFileSection({
 
       <AdminCard title="Delete File">
 
-        {/* Filters */}
+        {/* ---------------- FILTERS ---------------- */}
         <div className="grid sm:grid-cols-2 gap-4 mb-4">
-          {/* Category */}
+
+          {/* CATEGORY */}
           <div>
             <label className="block text-sm font-medium mb-1">Category</label>
             <select
-              className="block w-full border border-neutral-300 rounded-md p-2"
               value={filters.category}
+              className="block w-full border border-neutral-300 rounded-md p-2"
               onChange={(e) =>
-                setFilters((prev) => ({ ...prev, category: e.target.value }))
+                setFilters((p) => ({
+                  ...p,
+                  category: e.target.value,
+                  year: "year-1",
+                  semester: 1,
+                  unit_name: "",
+                }))
               }
             >
               <option value="notes">Module Notes</option>
@@ -62,65 +76,104 @@ export default function DeleteFileSection({
             </select>
           </div>
 
-          {/* File Dropdown */}
-          <div>
-            <label className="block text-sm font-medium mb-1">File Name</label>
-            <select
-              id="delFilename"
-              className="block w-full border border-neutral-300 rounded-md p-2"
-              disabled={loading}
-            >
-              <option value="">
-                {loading ? "Loading..." : "Select file..."}
+          {/* YEAR */}
+          {(filters.category === "notes" || filters.category === "papers") && (
+            <div>
+              <label className="block text-sm font-medium mb-1">Year</label>
+              <select
+                value={filters.year}
+                className="block w-full border border-neutral-300 rounded-md p-2"
+                onChange={(e) =>
+                  setFilters((p) => ({ ...p, year: e.target.value }))
+                }
+              >
+                <option value="Year 1">Year 1</option>
+                <option value="Year 2">Year 2</option>
+                <option value="Year 3">Year 3</option>
+                <option value="Other">Other</option>
+
+              </select>
+            </div>
+          )}
+
+          {/* SEMESTER */}
+          {(filters.category === "notes" || filters.category === "papers") && (
+            <div>
+              <label className="block text-sm font-medium mb-1">Semester</label>
+              <select
+                value={filters.semester}
+                className="block w-full border border-neutral-300 rounded-md p-2"
+                onChange={(e) =>
+                  setFilters((p) => ({ ...p, semester: Number(e.target.value) }))
+                }
+              >
+                <option value={1}>Semester 1</option>
+                <option value={2}>Semester 2</option>
+              </select>
+            </div>
+          )}
+
+          {/* UNIT NAME */}
+          {(filters.category === "notes" || filters.category === "papers") && (
+            <div>
+              <label className="block text-sm font-medium mb-1">Unit Name</label>
+              <input
+                value={filters.unit_name}
+                onChange={(e) =>
+                  setFilters((p) => ({ ...p, unit_name: e.target.value }))
+                }
+                placeholder="e.g., MPC I"
+                className="block w-full border border-neutral-300 rounded-md p-2"
+              />
+            </div>
+          )}
+
+          {/* MODULE (markdown only) */}
+          {filters.category === "module" && (
+            <div>
+              <label className="block text-sm font-medium mb-1">Module</label>
+              <select
+                value={filters.module}
+                className="block w-full border border-neutral-300 rounded-md p-2"
+                onChange={(e) =>
+                  setFilters((p) => ({ ...p, module: e.target.value }))
+                }
+              >
+                <option value="upper">Upper Extremities</option>
+                <option value="lower">Lower Extremities</option>
+                <option value="pelvic">Pelvic Girdle</option>
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* ---------------- FILE LIST ---------------- */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Files</label>
+          <select
+            id="delFilename"
+            disabled={loading}
+            className="block w-full border border-neutral-300 rounded-md p-2"
+          >
+            <option value="">
+              {loading ? "Loading..." : "Select file..."}
+            </option>
+
+            {!loading && files.length === 0 && (
+              <option value="">No files found</option>
+            )}
+
+            {files.map((f) => (
+              <option key={f.id} value={f.id}>
+                {filters.category === "module"
+                  ? f.filename
+                  : `${f.year} › S${f.semester} › ${f.unit_name || "Unknown"} › ${f.filename}`}
               </option>
-
-              {!loading && files.length === 0 && (
-                <option value="">No files found</option>
-              )}
-
-              {files.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.filename}
-                </option>
-              ))}
-            </select>
-          </div>
+            ))}
+          </select>
         </div>
 
-        {/* Year & Module (only when needed) */}
-        <div className="grid sm:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Year</label>
-            <select
-              className="block w-full border border-neutral-300 rounded-md p-2"
-              value={filters.year}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, year: e.target.value }))
-              }
-            >
-              <option value="year-1">Year 1</option>
-              <option value="year-2">Year 2</option>
-              <option value="year-3">Year 3</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Module</label>
-            <select
-              className="block w-full border border-neutral-300 rounded-md p-2"
-              value={filters.module}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, module: e.target.value }))
-              }
-            >
-              <option value="upper">Upper</option>
-              <option value="lower">Lower</option>
-              <option value="pelvic">Pelvic</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Delete Button */}
+        {/* ---------------- DELETE BUTTON ---------------- */}
         <form onSubmit={handleFileDelete}>
           <button
             type="submit"

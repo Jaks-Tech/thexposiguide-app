@@ -12,15 +12,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing assignment ID" }, { status: 400 });
     }
 
-    // 1️⃣ Get the assignment record
+    // 1️⃣ Fetch full record
     const { data, error: fetchError } = await supabaseAdmin
       .from("assignments")
-      .select("path, title")
+      .select("path, title, year, semester, unit_name")
       .eq("id", id)
       .maybeSingle();
 
     if (fetchError) {
-      console.error("❌ Error fetching assignment:", fetchError.message);
       return NextResponse.json({ error: fetchError.message }, { status: 500 });
     }
 
@@ -34,28 +33,31 @@ export async function POST(req: Request) {
       .remove([data.path]);
 
     if (storageError) {
-      console.error("❌ Storage deletion error:", storageError.message);
       return NextResponse.json(
         { error: "Failed to delete file from Supabase storage" },
         { status: 500 }
       );
     }
 
-    // 3️⃣ Delete record from database
+    // 3️⃣ Delete from DB
     const { error: dbError } = await supabaseAdmin
       .from("assignments")
       .delete()
       .eq("id", id);
 
     if (dbError) {
-      console.error("❌ Database deletion error:", dbError.message);
-      return NextResponse.json({ error: "Failed to delete record" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to delete record from database" },
+        { status: 500 }
+      );
     }
 
-    console.log(`✅ Deleted assignment: ${data.title}`);
-    return NextResponse.json({ success: true, message: "✅ Assignment deleted successfully!" });
+    return NextResponse.json({
+      success: true,
+      message: `Deleted: ${data.year} › S${data.semester} › ${data.unit_name} › ${data.title}`,
+    });
+
   } catch (err: any) {
-    console.error("❌ Unexpected error deleting assignment:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

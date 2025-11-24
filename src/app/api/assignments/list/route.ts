@@ -4,11 +4,10 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 export async function GET() {
   const { data, error } = await supabaseAdmin
     .from("assignments")
-    .select("id, title, year")
+    .select("id, title, year, semester, unit_name")
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("❌ Error fetching assignments:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
