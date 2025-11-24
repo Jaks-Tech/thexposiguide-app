@@ -276,7 +276,7 @@ return (
             </p>
 
             {/* ⭐ Improved Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
 
               {papers.map((p) => (
                 <a
