@@ -7,7 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Script from "next/script";
 import HydratedError from "@/components/HydratedError";  
-import AnalyticsHeartbeat from "@/components/AnalyticsHeartbeat";   // ✅ ADDED
+import AnalyticsHeartbeat from "@/components/AnalyticsHeartbeat";
 
 export const metadata: Metadata = {
   title: "The XPosiGuide",
@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className="min-h-screen flex flex-col bg-white text-neutral-900"
       >
 
-        {/* ✅ REALTIME USER HEARTBEAT (runs globally on all pages) */}
+        {/* ❤️ REALTIME USER HEARTBEAT */}
         <AnalyticsHeartbeat />
 
         {/* HEADER */}
@@ -38,7 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
 
-        {/* MAIN CONTENT — FULL WIDTH */}
+        {/* MAIN CONTENT */}
         <main className="flex-grow w-full">
           {children}
         </main>
@@ -47,10 +47,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <HydratedError>
           <Footer />
         </HydratedError>
-        <Script id="disable-scroll-restore" strategy="afterInteractive">
+
+        {/* ✅ FIX: Smart Scroll Restoration */}
+        <Script id="scroll-restore-handler" strategy="afterInteractive">
           {`
             if ('scrollRestoration' in history) {
-              history.scrollRestoration = 'manual';
+              const path = window.location.pathname;
+
+              // Only PDF AI uses natural scroll
+              if (path.startsWith('/pdf-ai')) {
+                history.scrollRestoration = 'auto';
+              } else {
+                history.scrollRestoration = 'manual';
+              }
             }
           `}
         </Script>

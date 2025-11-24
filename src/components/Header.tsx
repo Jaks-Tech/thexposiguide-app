@@ -11,7 +11,6 @@ import { FiMenu, FiChevronDown } from "react-icons/fi";
 import { MdHome, MdMenuBook } from "react-icons/md";
 import { PiRobotBold } from "react-icons/pi";
 import { GiHand, GiLeg, GiPelvisBone } from "react-icons/gi";
-import { BsFileEarmarkPdfFill } from "react-icons/bs";
 
 export default function Header() {
   const pathname = usePathname();
@@ -21,7 +20,7 @@ export default function Header() {
 
   const [user, setUser] = useState<any>(null);
 
-  // Load Supabase User
+  // Load user
   useEffect(() => {
     const loadUser = async () => {
       const { data } = await supabase.auth.getUser();
@@ -30,7 +29,6 @@ export default function Header() {
     loadUser();
   }, []);
 
-  // MODULE LINKS
   const moduleLinks = [
     {
       name: "Upper Extremities",
@@ -69,7 +67,7 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Close menu on route change
+  // Close menu when route changes
   useEffect(() => {
     setOpen(false);
     setModulesOpen(false);
@@ -80,7 +78,7 @@ export default function Header() {
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <nav className="flex items-center justify-between w-full py-3">
 
-          {/* LEFT — LOGO */}
+          {/* LEFT LOGO */}
           <Link href="/" className="flex items-center gap-3">
             <Image
               src="/assets/logo.png"
@@ -92,29 +90,23 @@ export default function Header() {
             <span className="text-lg font-bold tracking-wide">The XPosiGuide</span>
           </Link>
 
-          {/* RIGHT SIDE ITEMS */}
-          <div className="flex items-center gap-4">
+          {/* RIGHT AREA */}
+          <div className="flex items-center gap-3 sm:gap-4">
 
-            {/* ⭐ Chat-Your-PDF (HEADER BUTTON) */}
+            {/* 🔵 ALWAYS VISIBLE ON ALL DEVICES */}
             <Link
               href="/pdf-ai"
               className={`
-                hidden sm:flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium
-                transition
+                flex items-center gap-2 px-3 sm:px-4 py-1.5
+                rounded-lg text-sm font-medium
+                transition border border-white/20
                 ${pathname === "/pdf-ai"
-                  ? "bg-white/20 text-white shadow-sm"
+                  ? "bg-white/20 shadow-sm"
                   : "hover:bg-white/10"}
               `}
             >
-              {/* Combined AI + PDF Icon */}
-              <div className="relative flex items-center">
-                <PiRobotBold size={20} className="text-purple-300" />
-                <BsFileEarmarkPdfFill
-                  size={13}
-                  className="text-red-400 absolute -right-2 -bottom-1"
-                />
-              </div>
-              Chat-Your-PDF
+              <PiRobotBold size={18} className="text-purple-200" />
+              <span className="hidden xs:inline">Chat Your PDF</span>
             </Link>
 
             {/* Active Users Badge */}
@@ -129,50 +121,45 @@ export default function Header() {
                 <FiMenu size={24} />
               </button>
 
-              {/* ▼ DROPDOWN MENU ▼ */}
+              {/* ▼ DROPDOWN ▼ */}
               {open && (
                 <div className="
-                  absolute right-0 mt-3 w-72 bg-white text-slate-800 shadow-xl 
+                  absolute right-0 mt-3 w-72 bg-white text-slate-800 shadow-xl
                   rounded-xl border border-slate-200 py-2
                 ">
 
-                  {/* TOP LINKS */}
-                  {topLinks.map((item) => {
-                    const active = pathname === item.href;
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`
-                          flex items-center gap-3 px-4 py-2 text-sm rounded-lg
-                          ${active ? "bg-blue-100 text-blue-700 font-semibold" : "hover:bg-blue-50"}
-                        `}
-                      >
-                        {item.icon}
-                        {item.name}
-                      </Link>
-                    );
-                  })}
+                  {/* Top Links */}
+                  {topLinks.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`
+                        flex items-center gap-3 px-4 py-2 text-sm rounded-lg
+                        ${pathname === item.href
+                          ? "bg-blue-100 text-blue-700 font-semibold"
+                          : "hover:bg-blue-50"}
+                      `}
+                    >
+                      {item.icon}
+                      {item.name}
+                    </Link>
+                  ))}
 
-                  {/* ⭐ Mobile Chat-your-PDF */}
+                  {/* PDF AI INSIDE DROPDOWN (backup for tiny screens) */}
                   <Link
                     href="/pdf-ai"
                     className={`
                       flex items-center gap-3 px-4 py-2 text-sm rounded-lg
-                      ${pathname === "/pdf-ai" ? "bg-blue-100 text-blue-700 font-semibold" : "hover:bg-blue-50"}
+                      ${pathname === "/pdf-ai"
+                        ? "bg-blue-100 text-blue-700 font-semibold"
+                        : "hover:bg-blue-50"}
                     `}
                   >
-                    <div className="relative flex items-center">
-                      <PiRobotBold size={20} className="text-purple-600" />
-                      <BsFileEarmarkPdfFill
-                        size={14}
-                        className="text-red-500 absolute -right-2 -bottom-1"
-                      />
-                    </div>
+                    <PiRobotBold size={20} className="text-purple-600" />
                     Chat-Your-PDF
                   </Link>
 
-                  {/* EXPLORE PROJECTIONS DROPDOWN */}
+                  {/* Explore Projections */}
                   <button
                     onClick={() => setModulesOpen(!modulesOpen)}
                     className="
@@ -184,6 +171,7 @@ export default function Header() {
                       <GiPelvisBone size={20} className="text-blue-700" />
                       Explore Projections
                     </div>
+
                     <FiChevronDown
                       className={`transition-transform ${modulesOpen ? "rotate-180" : ""}`}
                     />
@@ -191,22 +179,21 @@ export default function Header() {
 
                   {modulesOpen && (
                     <div className="pl-8 pr-4 py-1 space-y-1">
-                      {moduleLinks.map((item) => {
-                        const active = pathname === item.href;
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            className={`
-                              flex items-center gap-2 px-3 py-1.5 text-sm rounded-md
-                              ${active ? "bg-blue-100 text-blue-700 font-semibold" : "hover:bg-blue-50"}
-                            `}
-                          >
-                            {item.icon}
-                            {item.name}
-                          </Link>
-                        );
-                      })}
+                      {moduleLinks.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={`
+                            flex items-center gap-2 px-3 py-1.5 text-sm rounded-md
+                            ${pathname === item.href
+                              ? "bg-blue-100 text-blue-700 font-semibold"
+                              : "hover:bg-blue-50"}
+                          `}
+                        >
+                          {item.icon}
+                          {item.name}
+                        </Link>
+                      ))}
                     </div>
                   )}
 
@@ -215,7 +202,9 @@ export default function Header() {
                     href="/xposilearn"
                     className={`
                       flex items-center gap-3 px-4 py-2 text-sm rounded-lg mt-1
-                      ${pathname === "/xposilearn" ? "bg-blue-100 text-blue-700 font-semibold" : "hover:bg-blue-50"}
+                      ${pathname === "/xposilearn"
+                        ? "bg-blue-100 text-blue-700 font-semibold"
+                        : "hover:bg-blue-50"}
                     `}
                   >
                     <MdMenuBook size={20} className="text-indigo-600" />
@@ -227,7 +216,9 @@ export default function Header() {
                     href="/xposi-ai"
                     className={`
                       flex items-center gap-3 px-4 py-2 text-sm rounded-lg
-                      ${pathname === "/xposi-ai" ? "bg-blue-100 text-blue-700 font-semibold" : "hover:bg-blue-50"}
+                      ${pathname === "/xposi-ai"
+                        ? "bg-blue-100 text-blue-700 font-semibold"
+                        : "hover:bg-blue-50"}
                     `}
                   >
                     <PiRobotBold size={20} className="text-purple-600" />
