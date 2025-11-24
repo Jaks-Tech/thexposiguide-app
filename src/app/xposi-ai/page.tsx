@@ -229,26 +229,77 @@ export default async function XPosiAIPage({
           />
         </section>
 
-        {/* 🤖 AI Assistant (EXISTING SYSTEM) */}
-        <section className="bg-gradient-to-br from-blue-50 to-white border border-blue-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition">
-          <h2 className="text-2xl font-semibold text-blue-700 mb-4 text-center">
-            🤖 Ask <span className="font-extrabold text-blue-800">XPosi AI</span>
-          </h2>
-          <p className="text-sm text-neutral-600 mb-5 text-center">
-            Click below to generate AI-based guidance or explanations for this paper.
-          </p>
 
-          <div className="flex flex-col items-stretch">
-            <XPosiAIClient content={textForAI} />
+        {/* 📘 NEW AI WORKFLOW — STEP SYSTEM */}
+      <section className="bg-gradient-to-br from-blue-50 to-white border border-blue-100 rounded-2xl p-6 shadow-md mt-12">
+
+        <h2 className="text-2xl font-semibold text-blue-700 mb-4 text-center">
+          🤖 Get AI Assistance for this Paper...
+        </h2>
+
+        <p className="text-sm text-neutral-700 text-center mb-6">
+          Before XPosi AI can generate full answers for this paper, it must first extract the text.
+        </p>
+
+        {/* STEP INDICATOR */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="text-center">
+            <div className="w-10 h-10 mx-auto rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
+              1
+            </div>
+            <p className="text-xs mt-2 font-medium text-blue-700">Upload Paper</p>
           </div>
 
-          <div className="mt-6 text-xs text-neutral-500 border-t border-blue-100 pt-3 text-center">
-            <p>
-              <strong>Note:</strong> This AI assistant provides educational explanations.
-              Always confirm with institutional radiography standards.
-            </p>
+          <div className="text-center">
+            <div className="w-10 h-10 mx-auto rounded-full bg-yellow-500 text-white flex items-center justify-center font-bold">
+              2
+            </div>
+            <p className="text-xs mt-2 font-medium text-yellow-600">Extract Text</p>
           </div>
-        </section>
+
+          <div className="text-center">
+            <div className="w-10 h-10 mx-auto rounded-full bg-green-600 text-white flex items-center justify-center font-bold">
+              3
+            </div>
+            <p className="text-xs mt-2 font-medium text-green-700">Generate Answers</p>
+          </div>
+        </div>
+
+        {/* ACTION BUTTONS */}
+        <div className="flex flex-col gap-4 items-center">
+
+          {/* STEP 1 BUTTON */}
+          <button
+            className="w-full max-w-xs py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
+          >
+            📥 Upload This Paper for AI
+          </button>
+
+          {/* STEP 2 BUTTON */}
+          <button
+            className="w-full max-w-xs py-2 bg-yellow-500 text-white rounded-lg shadow hover:bg-yellow-600 disabled:bg-yellow-300"
+            disabled
+          >
+            🔍 Extract Text (after upload)
+          </button>
+
+          {/* STEP 3 BUTTON */}
+          <button
+            className="w-full max-w-xs py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 disabled:bg-green-300"
+            disabled
+          >
+            🧠 Generate Full Answers
+          </button>
+        </div>
+
+        <p className="text-xs text-center mt-6 text-neutral-500">
+          The AI will only generate results after your document text is fully extracted.
+        </p>
+
+      </section>
+
+
+        
       </main>
     );
   }
