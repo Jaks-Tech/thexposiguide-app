@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { FiUpload, FiSend, FiX } from "react-icons/fi";
+import { FiUpload, FiX } from "react-icons/fi";
 import { BsFileEarmarkPdfFill } from "react-icons/bs";
 import { LiaFileWordSolid } from "react-icons/lia";
+import ReactMarkdown from "react-markdown";
 
 type ChatMessage = {
   sender: "user" | "ai";
@@ -27,10 +28,56 @@ export default function PDFChatClient() {
   const now = () =>
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  /* Scroll on new message */
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
+
+  /* ---------------- HELPER: SMART FORMATTING ---------------- */
+  const preprocessText = (text: string) => {
+    if (!text) return "";
+    let clean = text.trim();
+
+    // 1. Normalize bullets: Replace special char bullets (•) with Markdown bullets (*)
+    clean = clean.replace(/•/g, "*");
+
+    // 2. Split into lines to analyze structure
+    const lines = clean.split("\n");
+
+    if (lines.length > 0) {
+      const firstLine = lines[0].trim();
+
+      // Check if the FIRST line starts with a bullet (*, -, or 1.)
+      // Regex explains: Start of line (^), followed by *, -, or number., then space
+      const bulletMatch = firstLine.match(/^(\*|-|\d+\.)\s/);
+
+      if (bulletMatch) {
+        // FOUND IT: The Title is disguised as a bullet point.
+        // 1. Remove the bullet from the first line
+        const titleContent = firstLine.replace(/^(\*|-|\d+\.)\s/, "").trim();
+        
+        // 2. Make it a bold Header (###) and add a newline gap
+        lines[0] = `### ${titleContent}\n`; 
+        
+        // 3. Join back together. 
+        // We leave lines 1...n ALONE so their bullets stay intact.
+        return lines.join("\n");
+      }
+    }
+
+    // 3. Fallback: If no markdown exists at all (plain text block), apply formatting
+    // only if it looks like a list of sentences separated by newlines.
+    const hasAnyMarkdown = /^(#|\*|-|\d+\.)\s/m.test(clean);
+    if (!hasAnyMarkdown && clean.includes("\n")) {
+      const cleanLines = clean.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+      if (cleanLines.length > 1) {
+        const title = cleanLines[0];
+        const bullets = cleanLines.slice(1);
+        return `### ${title}\n\n${bullets.map(l => `* ${l}`).join("\n")}`;
+      }
+    }
+
+    return clean;
+  };
 
   /* ---------------- FILE SELECT ---------------- */
   function handleFileSelect(newFile: File | null) {
@@ -75,7 +122,7 @@ export default function PDFChatClient() {
       setMessages([
         {
           sender: "ai",
-          text: "📘 File uploaded and indexed! You may now ask questions.",
+          text: "📘 **File uploaded and indexed!** You may now ask questions.",
           time: now(),
         },
       ]);
@@ -133,7 +180,6 @@ export default function PDFChatClient() {
 
   return (
     <div className="flex flex-col gap-4 w-full">
-
       {/* CHAT WINDOW */}
       <div
         className="
@@ -145,8 +191,6 @@ export default function PDFChatClient() {
         {/* PLACEHOLDER */}
         {!file && messages.length === 0 && (
           <div className="text-center flex flex-col items-center mt-6 space-y-6 select-none">
-
-            {/* AI–PDF Animation */}
             <div className="relative w-28 h-28">
               <span className="absolute left-1/2 -translate-x-1/2 top-0 text-6xl animate-pulse">
                 🤖
@@ -154,7 +198,6 @@ export default function PDFChatClient() {
               <span className="absolute left-1/2 -translate-x-1/2 bottom-0 text-6xl">
                 📄
               </span>
-
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-20 h-1 bg-blue-400 rounded-full opacity-60 animate-[scan_2.5s_linear_infinite]" />
               </div>
@@ -165,7 +208,8 @@ export default function PDFChatClient() {
             </h3>
 
             <p className="text-slate-800 text-sm max-w-md leading-relaxed">
-              Upload a PDF or Word file - XPosi AI will analyze and answer questions based strictly on its contents.
+              Upload a PDF or Word file - XPosi AI will analyze and answer
+              questions based strictly on its contents.
             </p>
           </div>
         )}
@@ -183,7 +227,7 @@ export default function PDFChatClient() {
                 <div
                   className={`
                     w-10 h-10 rounded-full flex items-center justify-center 
-                    text-white text-sm font-semibold shadow
+                    text-white text-sm font-semibold shadow shrink-0
                     ${m.sender === "user" ? "bg-blue-600" : "bg-gray-700"}
                   `}
                 >
@@ -192,7 +236,7 @@ export default function PDFChatClient() {
 
                 <div
                   className={`
-                    max-w-[75%] px-4 py-3 rounded-2xl shadow-sm
+                    max-w-[85%] sm:max-w-[75%] px-5 py-4 rounded-2xl shadow-sm overflow-hidden
                     ${
                       m.sender === "user"
                         ? "bg-blue-600 text-white"
@@ -200,8 +244,28 @@ export default function PDFChatClient() {
                     }
                   `}
                 >
-                  {m.text}
-                  <div className="text-[10px] opacity-70 mt-1 text-right">
+                  {m.sender === "ai" ? (
+                    <div
+                      className="
+                        prose prose-sm max-w-none 
+                        prose-p:leading-relaxed prose-p:mb-2 last:prose-p:mb-0
+                        prose-ul:list-disc prose-ul:pl-4 prose-ul:mb-2
+                        prose-ol:list-decimal prose-ol:pl-4 prose-ol:mb-2
+                        prose-li:marker:text-blue-600 prose-li:my-1
+                        prose-strong:font-bold prose-strong:text-slate-900
+                        prose-a:text-blue-600 prose-a:underline hover:prose-a:text-blue-500
+                        prose-headings:text-slate-900 prose-headings:font-bold prose-headings:mb-2
+                      "
+                    >
+                      <ReactMarkdown>{preprocessText(m.text)}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p className="whitespace-pre-wrap leading-relaxed">
+                      {m.text}
+                    </p>
+                  )}
+
+                  <div className="text-[10px] opacity-70 mt-2 text-right block w-full">
                     {m.time}
                   </div>
                 </div>
@@ -209,7 +273,7 @@ export default function PDFChatClient() {
             ))}
 
             {typing && (
-              <div className="text-slate-500 text-sm animate-pulse">
+              <div className="text-slate-500 text-sm animate-pulse ml-14">
                 🤖 AI is typing…
               </div>
             )}
@@ -225,8 +289,11 @@ export default function PDFChatClient() {
           disabled={!pdfId}
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSend()}
           placeholder={
-            pdfId ? "Ask a question about your document…" : "Upload a file first…"
+            pdfId
+              ? "Ask a question about your document…"
+              : "Upload a file first…"
           }
           className="
             w-full border rounded-xl px-4 py-2 text-sm
@@ -241,16 +308,15 @@ export default function PDFChatClient() {
           className="
             px-5 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold
             disabled:bg-blue-300 shadow-md hover:shadow-lg active:scale-95
+            transition
           "
         >
           {sending ? "Thinking…" : "Send"}
         </button>
       </div>
 
-      {/* FILE UPLOAD (BOTTOM) */}
+      {/* FILE UPLOAD & CANCEL */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center w-full pt-4 border-t mt-2">
-
-        {/* FILE PICKER */}
         <label
           className="
             flex items-center justify-between gap-2
@@ -283,7 +349,6 @@ export default function PDFChatClient() {
           />
         </label>
 
-        {/* CANCEL */}
         {file && (
           <button
             onClick={cancelFileSelection}
@@ -296,7 +361,6 @@ export default function PDFChatClient() {
           </button>
         )}
 
-        {/* UPLOAD */}
         <button
           onClick={handleUpload}
           disabled={!file || uploading}
