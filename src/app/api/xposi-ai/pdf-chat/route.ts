@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    const { pdf_id, question } = await req.json();
+    const { pdf_id, question, history = [] } = await req.json();
 
     if (!pdf_id || !question) {
       return NextResponse.json(
@@ -19,7 +19,12 @@ export async function POST(req: Request) {
       apiKey: process.env.OPENAI_API_KEY!,
     });
 
-    /* ---------------- 1. Create embedding for query ---------------- */
+    /* ------------------ Convert history into clean text ------------------ */
+    const historyText = history
+      .map((m: any) => `${m.sender === "user" ? "User" : "AI"}: ${m.text}`)
+      .join("\n");
+
+    /* ---------------- 1. Embedding for user query ---------------- */
     const qEmbed = await openai.embeddings.create({
       model: "text-embedding-3-small",
       input: question,
@@ -27,7 +32,7 @@ export async function POST(req: Request) {
 
     const queryEmbedding = qEmbed.data[0].embedding;
 
-    /* ---------------- 2. Find matching chunks ---------------- */
+    /* ---------------- 2. Find matching PDF chunks ---------------- */
     const { data: matches, error } = await supabaseAdmin.rpc(
       "match_pdf_chunks",
       {
@@ -45,9 +50,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const context = matches?.map((m: any) => m.content).join("\n\n") || "";
+    const context =
+      matches?.map((m: any) => m.content).join("\n\n") || "";
 
-    /* ---------------- 3. If context empty → general knowledge ---------------- */
+    /* ---------------- 3. If no PDF context → fallback general answer ---------------- */
     if (!context.trim()) {
       const fallback = await openai.chat.completions.create({
         model: "gpt-4o-mini",
@@ -56,9 +62,10 @@ export async function POST(req: Request) {
           {
             role: "system",
             content:
-              "You are XPosi PDF AI. The PDF did not contain info relevant to the question. " +
-              "Provide a correct radiography-based general answer without mentioning any extraction or missing data.",
+              "You are XPosi PDF AI. PDF had no relevant info. Use general radiography knowledge. " +
+              "Do not mention missing PDF content.",
           },
+          { role: "assistant", content: historyText || "" },
           { role: "user", content: question },
         ],
       });
@@ -68,7 +75,23 @@ export async function POST(req: Request) {
       });
     }
 
-    /* ---------------- 4. PDF-only answer ---------------- */
+    /* ---------------- 4. Combined: PDF context + Chat History ---------------- */
+
+    const finalPrompt = `
+PDF Extracted Context:
+${context}
+
+Conversation so far:
+${historyText}
+
+New User Question:
+${question}
+
+Using ONLY the PDF context above, answer the new question. 
+If the answer is not inside the PDF context, reply:
+"The information is not available in this PDF."
+`;
+
     const chatRes = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0.1,
@@ -76,12 +99,11 @@ export async function POST(req: Request) {
         {
           role: "system",
           content:
-            "You are XPosi PDF AI. You MUST answer using ONLY the PDF context. " +
-            "If the answer cannot be found in the PDF, reply: 'The information is not available in this PDF.'",
+            "You are XPosi PDF AI. You must answer solely using the PDF context.",
         },
         {
           role: "user",
-          content: `PDF context:\n${context}\n\nUser question: ${question}`,
+          content: finalPrompt,
         },
       ],
     });

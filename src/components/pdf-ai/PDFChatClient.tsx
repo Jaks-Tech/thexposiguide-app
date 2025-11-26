@@ -1,15 +1,23 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { FiUpload, FiX } from "react-icons/fi";
+import { FiUpload, FiSend, FiX, FiPaperclip, FiXCircle } from "react-icons/fi";
 import { BsFileEarmarkPdfFill } from "react-icons/bs";
 import { LiaFileWordSolid } from "react-icons/lia";
-import ReactMarkdown from "react-markdown";
+import { PiPushPinBold, PiPushPinSlashBold } from "react-icons/pi";
 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import EmojiPicker from "emoji-picker-react";
+import DisableAutoScroll from "@/components/DisableAutoScrollXposiAI";
 type ChatMessage = {
+  id: string;
   sender: "user" | "ai";
   text: string;
   time?: string;
+  pinned?: boolean;
+  attachmentUrl?: string;
+  streaming?: boolean;
 };
 
 export default function PDFChatClient() {
@@ -20,85 +28,146 @@ export default function PDFChatClient() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [typing, setTyping] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [docxHtml, setDocxHtml] = useState<string | null>(null);
+  const [previewExpanded, setPreviewExpanded] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Emoji picker
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const emojiRef = useRef<HTMLDivElement | null>(null);
+
+  // Voice input
+  const [hasSpeech, setHasSpeech] = useState(false);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  // Pinned sidebar
+  const [pinnedOpen, setPinnedOpen] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement | null>(null);
-
+  const chatScrollRef = useRef<HTMLDivElement | null>(null);   
+  const [autoScroll, setAutoScroll] = useState(true);   
   const allowedExtensions = ["pdf", "doc", "docx"];
 
   const now = () =>
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
+  /* ---------------- SCROLL ---------------- */
+useEffect(() => {
+  if (isStreaming) return;   // 👈 do NOT scroll while typing
+  chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+}, [messages, isStreaming]);
+
+
+  /* ---------------- EMOJI CLICK-OUTSIDE ---------------- */
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, typing]);
+    if (!emojiOpen) return;
 
-  /* ---------------- HELPER: SMART FORMATTING ---------------- */
-  const preprocessText = (text: string) => {
-    if (!text) return "";
-    let clean = text.trim();
-
-    // 1. Normalize bullets: Replace special char bullets (•) with Markdown bullets (*)
-    clean = clean.replace(/•/g, "*");
-
-    // 2. Split into lines to analyze structure
-    const lines = clean.split("\n");
-
-    if (lines.length > 0) {
-      const firstLine = lines[0].trim();
-
-      // Check if the FIRST line starts with a bullet (*, -, or 1.)
-      // Regex explains: Start of line (^), followed by *, -, or number., then space
-      const bulletMatch = firstLine.match(/^(\*|-|\d+\.)\s/);
-
-      if (bulletMatch) {
-        // FOUND IT: The Title is disguised as a bullet point.
-        // 1. Remove the bullet from the first line
-        const titleContent = firstLine.replace(/^(\*|-|\d+\.)\s/, "").trim();
-        
-        // 2. Make it a bold Header (###) and add a newline gap
-        lines[0] = `### ${titleContent}\n`; 
-        
-        // 3. Join back together. 
-        // We leave lines 1...n ALONE so their bullets stay intact.
-        return lines.join("\n");
+    function handleClick(e: MouseEvent) {
+      if (emojiRef.current && !emojiRef.current.contains(e.target as Node)) {
+        setEmojiOpen(false);
       }
     }
 
-    // 3. Fallback: If no markdown exists at all (plain text block), apply formatting
-    // only if it looks like a list of sentences separated by newlines.
-    const hasAnyMarkdown = /^(#|\*|-|\d+\.)\s/m.test(clean);
-    if (!hasAnyMarkdown && clean.includes("\n")) {
-      const cleanLines = clean.split("\n").map(l => l.trim()).filter(l => l.length > 0);
-      if (cleanLines.length > 1) {
-        const title = cleanLines[0];
-        const bullets = cleanLines.slice(1);
-        return `### ${title}\n\n${bullets.map(l => `* ${l}`).join("\n")}`;
-      }
-    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [emojiOpen]);
 
-    return clean;
-  };
+  /* ---------------- VOICE SETUP ---------------- */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
-  /* ---------------- FILE SELECT ---------------- */
-  function handleFileSelect(newFile: File | null) {
-    if (!newFile) return;
-    const ext = newFile.name.split(".").pop()?.toLowerCase();
-    if (!ext || !allowedExtensions.includes(ext)) {
-      alert("Unsupported file type. Please upload a PDF or Word file.");
+    const SR =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (!SR) {
+      setHasSpeech(false);
       return;
     }
-    setFile(newFile);
-    setMessages([]);
-    setPdfId(null);
+
+    const rec = new SR();
+    rec.lang = "en-US";
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+
+    rec.onresult = (event: any) => {
+      setInput((prev) => prev + " " + event.results[0][0].transcript);
+    };
+
+    rec.onend = () => setListening(false);
+
+    recognitionRef.current = rec;
+    setHasSpeech(true);
+  }, []);
+
+  function handleToggleListening() {
+    if (!hasSpeech) {
+      alert("Voice input not supported");
+      return;
+    }
+    if (listening) return recognitionRef.current.stop();
+
+    setListening(true);
+    recognitionRef.current.start();
   }
 
+  /* ---------------- FILE SELECT ---------------- */
+/* ---------------- FILE SELECT ---------------- */
+async function handleFileSelect(newFile: File | null) {
+  if (!newFile) return;
+  const ext = newFile.name.split(".").pop()?.toLowerCase();
+
+  if (!ext || !allowedExtensions.includes(ext)) {
+    alert("Unsupported file type.");
+    return;
+  }
+
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+
+  setFile(newFile);
+  setMessages([]);
+  setPdfId(null);
+
+  // Reset previews
+  setPreviewExpanded(false);
+  setDocxHtml(null);
+
+  // PDF PREVIEW
+  if (ext === "pdf") {
+    const url = URL.createObjectURL(newFile);
+    setPreviewUrl(url);
+    return;
+  }
+
+  // DOCX PREVIEW — Convert to HTML
+  if (ext === "docx") {
+    const arrayBuffer = await newFile.arrayBuffer();
+    const mammoth = await import("mammoth");
+
+    const { value } = await mammoth.convertToHtml({
+      arrayBuffer,
+    });
+
+    setDocxHtml(value);
+    return;
+  }
+
+  // No preview for .doc
+  setPreviewUrl(null);
+}
+
+
   function cancelFileSelection() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
     setFile(null);
     setPdfId(null);
     setMessages([]);
   }
 
-  /* ---------------- UPLOAD FILE ---------------- */
+  /* ---------------- UPLOAD ---------------- */
   async function handleUpload() {
     if (!file) return;
 
@@ -106,34 +175,84 @@ export default function PDFChatClient() {
     setMessages([]);
     setPdfId(null);
 
-    const formData = new FormData();
-    formData.append("file", file);
+    const fd = new FormData();
+    fd.append("file", file);
 
     try {
       const res = await fetch("/api/xposi-ai/upload-pdf", {
         method: "POST",
-        body: formData,
+        body: fd,
       });
-
       const data = await res.json();
       if (!data.success) throw new Error();
 
       setPdfId(data.pdf_id);
       setMessages([
         {
+          id: `sys-${Date.now()}`,
           sender: "ai",
-          text: "📘 **File uploaded and indexed!** You may now ask questions.",
+          text: "📘 File uploaded! Ask anything.",
           time: now(),
         },
       ]);
     } catch {
-      setMessages([{ sender: "ai", text: "❌ Upload failed.", time: now() }]);
+      setMessages([
+        {
+          id: `sys-${Date.now()}`,
+          sender: "ai",
+          text: "❌ Upload failed.",
+          time: now(),
+        },
+      ]);
     } finally {
       setUploading(false);
     }
   }
 
-  /* ---------------- SEND MESSAGE ---------------- */
+  /* ---------------- COPY ---------------- */
+  async function handleCopy(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      alert("Can't copy");
+    }
+  }
+
+  /* ---------------- PINNING ---------------- */
+  function togglePin(id: string) {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, pinned: !m.pinned } : m))
+    );
+  }
+
+  const pinnedMessages = messages.filter((m) => m.pinned);
+
+  /* ---------------- ATTACHMENT ---------------- */
+  function handleAttachment(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+
+    const url = URL.createObjectURL(f);
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `att-${Date.now()}`,
+        sender: "user",
+        text: "",
+        time: now(),
+        attachmentUrl: url,
+      },
+    ]);
+  }
+
+  /* ---------------- SEND ---------------- */
+  function handleKeyDown(e: any) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }
+
   async function handleSend() {
     if (!pdfId || !input.trim()) return;
 
@@ -142,7 +261,7 @@ export default function PDFChatClient() {
 
     setMessages((prev) => [
       ...prev,
-      { sender: "user", text: question, time: now() },
+      { id: `us-${Date.now()}`, sender: "user", text: question, time: now() },
     ]);
 
     setSending(true);
@@ -152,23 +271,25 @@ export default function PDFChatClient() {
       const res = await fetch("/api/xposi-ai/pdf-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pdf_id: pdfId, question }),
+        body: JSON.stringify({
+          pdf_id: pdfId,
+          question,
+          history: messages,
+        }),
       });
 
       const data = await res.json();
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "ai",
-          text: data.answer || "⚠️ No response returned.",
-          time: now(),
-        },
-      ]);
+      const full = data.answer || "⚠️ No response.";
+      await animateTyping(full);
     } catch {
       setMessages((prev) => [
         ...prev,
-        { sender: "ai", text: "❌ AI request failed.", time: now() },
+        {
+          id: `err-${Date.now()}`,
+          sender: "ai",
+          text: "❌ AI failed",
+          time: now(),
+        },
       ]);
     } finally {
       setSending(false);
@@ -176,168 +297,305 @@ export default function PDFChatClient() {
     }
   }
 
+  /* ---------------- TYPING ANIMATION ---------------- */
+async function animateTyping(text: string) {
+  const id = `ai-${Date.now()}`;
+
+  setIsStreaming(true); // 👈 AI started typing
+
+  setMessages((prev) => [
+    ...prev,
+    { id, sender: "ai", text: "", streaming: true }
+  ]);
+
+  let cur = "";
+
+  for (let i = 0; i < text.length; i++) {
+    cur += text[i];
+
+    setMessages((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, text: cur } : m))
+    );
+
+    await new Promise((r) => setTimeout(r, 10));
+  }
+
+  setMessages((prev) =>
+    prev.map((m) =>
+      m.id === id ? { ...m, text: cur, streaming: false, time: now() } : m
+    )
+  );
+
+  setIsStreaming(false); // 👈 AI finished typing
+}
+
+  /* ---------------- EMOJI ---------------- */
+  function handleEmojiClick(emojiData: any) {
+    setInput((prev) => prev + emojiData.emoji);
+  }
+
   /* ---------------- RENDER ---------------- */
 
   return (
-    <div className="flex flex-col gap-4 w-full">
-      {/* CHAT WINDOW */}
-      <div
-        className="
-          border rounded-3xl bg-white
-          max-h-[70vh] min-h-[28rem]
-          overflow-y-auto p-8 space-y-8 text-sm shadow-inner
-        "
-      >
-        {/* PLACEHOLDER */}
-        {!file && messages.length === 0 && (
-          <div className="text-center flex flex-col items-center mt-6 space-y-6 select-none">
-            <div className="relative w-28 h-28">
-              <span className="absolute left-1/2 -translate-x-1/2 top-0 text-6xl animate-pulse">
-                🤖
-              </span>
-              <span className="absolute left-1/2 -translate-x-1/2 bottom-0 text-6xl">
-                📄
-              </span>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-20 h-1 bg-blue-400 rounded-full opacity-60 animate-[scan_2.5s_linear_infinite]" />
+    <>
+    <DisableAutoScroll />
+        <div className="relative flex flex-col gap-4 w-full max-w-3xl mx-auto px-2 py-4">
+      {/* PINNED SIDEBAR */}
+      {pinnedOpen && (
+        <div className="fixed inset-0 z-40 flex justify-end">
+          <div
+            className="flex-1 bg-black/40"
+            onClick={() => setPinnedOpen(false)}
+          />
+          <div className="w-72 sm:w-80 h-full bg-white shadow-xl p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <PiPushPinBold />
+                <span className="font-semibold text-sm">Pinned</span>
               </div>
+              <button
+                onClick={() => setPinnedOpen(false)}
+                className="text-slate-500 hover:text-slate-800"
+              >
+                <FiXCircle />
+              </button>
             </div>
 
-            <h3 className="text-2xl font-bold text-blue-700 tracking-wide">
+            {pinnedMessages.length === 0 ? (
+              <p className="text-xs text-slate-500">No pinned messages.</p>
+            ) : (
+              <div className="space-y-3 overflow-y-auto text-xs">
+                {pinnedMessages.map((m) => (
+                  <div
+                    key={m.id}
+                    className="border border-slate-200 rounded-lg p-2 bg-slate-50"
+                  >
+                    <div className="text-[10px] mb-1 opacity-70">
+                      {m.sender === "user" ? "You" : "AI"} · {m.time}
+                    </div>
+                    <div className="line-clamp-4">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {m.text || "*Attachment*"}
+                      </ReactMarkdown>
+                    </div>
+                    <button
+                      onClick={() => togglePin(m.id)}
+                      className="mt-1 text-[10px] text-red-500 hover:underline"
+                    >
+                      Unpin
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* CHAT BOX */}
+      <div className="border rounded-3xl bg-white max-h-[70vh] min-h-[28rem] overflow-y-auto p-6 space-y-6 shadow-inner">
+        {/* PINNED TOGGLE */}
+        {file && (
+          <div className="flex items-center justify-between">
+            <span className="text-xs opacity-60">
+              Chatting with: <strong>{file?.name}</strong>
+            </span>
+
+            <button
+              onClick={() => setPinnedOpen(true)}
+              className="flex items-center gap-1 text-xs px-2 py-1 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100"
+            >
+              <PiPushPinBold className="text-sm" />
+              Pinned
+              {pinnedMessages.length > 0 && `(${pinnedMessages.length})`}
+            </button>
+          </div>
+        )}
+
+        {/* EMPTY STATE */}
+        {!file && messages.length === 0 && (
+          <div className="text-center mt-8">
+            <div className="text-6xl animate-pulse">🤖</div>
+            <div className="text-5xl">📄</div>
+            <h3 className="mt-4 text-xl font-bold text-blue-700">
               Scan • Read • Explain
             </h3>
-
-            <p className="text-slate-800 text-sm max-w-md leading-relaxed">
-              Upload a PDF or Word file - XPosi AI will analyze and answer
-              questions based strictly on its contents.
+            <p className="max-w-md mx-auto text-slate-700 mt-2">
+              Upload a PDF or Word file to begin chatting with the document.
             </p>
           </div>
         )}
 
         {/* CHAT MESSAGES */}
-        {file && (
-          <>
-            {messages.map((m, i) => (
+        {file &&
+          messages.map((m) => (
+            <div
+              key={m.id}
+              className={`flex items-start gap-3 ${
+                m.sender === "user" ? "flex-row-reverse" : ""
+              }`}
+            >
               <div
-                key={i}
-                className={`flex items-start gap-3 ${
-                  m.sender === "user" ? "flex-row-reverse" : ""
-                }`}
+                className={`
+                  w-10 h-10 rounded-full flex items-center justify-center 
+                  text-white text-lg shadow
+                  ${
+                    m.sender === "user"
+                      ? "bg-blue-600"
+                      : "bg-gray-600"
+                  }
+                `}
               >
-                <div
-                  className={`
-                    w-10 h-10 rounded-full flex items-center justify-center 
-                    text-white text-sm font-semibold shadow shrink-0
-                    ${m.sender === "user" ? "bg-blue-600" : "bg-gray-700"}
-                  `}
+                {m.sender === "user" ? "🧑" : "🤖"}
+              </div>
+
+              <div
+                className={`max-w-[75%] px-4 py-3 rounded-2xl shadow border
+                  ${
+                    m.sender === "user"
+                      ? "bg-blue-200 border-blue-300"
+                      : "bg-gray-100 border-slate-300"
+                  }
+                `}
+              >
+                {/* Pin button */}
+                <button
+                  onClick={() => togglePin(m.id)}
+                  className="float-right text-xs opacity-70 hover:opacity-100"
                 >
-                  {m.sender === "user" ? "You" : "AI"}
+                  {m.pinned ? <PiPushPinBold /> : <PiPushPinSlashBold />}
+                </button>
+
+                {/* Attachments */}
+                {m.attachmentUrl && (
+                  <img
+                    src={m.attachmentUrl}
+                    className="rounded-lg mb-2 max-w-xs border"
+                  />
+                )}
+
+                {/* Copy button */}
+                {m.sender === "ai" && (
+                  <div className="flex justify-end mb-1">
+                    <button
+                      onClick={() => handleCopy(m.text)}
+                      className="text-[10px] px-2 py-0.5 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-200"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                )}
+
+                {/* Markdown */}
+                <div
+                  className="
+                    prose prose-sm max-w-none
+                    prose-ul:list-disc prose-ul:ml-5
+                    prose-ol:list-decimal prose-ol:ml-5
+                  "
+                >
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {m.text || "*Attachment*"}
+                  </ReactMarkdown>
                 </div>
 
-                <div
-                  className={`
-                    max-w-[85%] sm:max-w-[75%] px-5 py-4 rounded-2xl shadow-sm overflow-hidden
-                    ${
-                      m.sender === "user"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white border border-slate-200 text-slate-800"
-                    }
-                  `}
-                >
-                  {m.sender === "ai" ? (
-                    <div
-                      className="
-                        prose prose-sm max-w-none 
-                        prose-p:leading-relaxed prose-p:mb-2 last:prose-p:mb-0
-                        prose-ul:list-disc prose-ul:pl-4 prose-ul:mb-2
-                        prose-ol:list-decimal prose-ol:pl-4 prose-ol:mb-2
-                        prose-li:marker:text-blue-600 prose-li:my-1
-                        prose-strong:font-bold prose-strong:text-slate-900
-                        prose-a:text-blue-600 prose-a:underline hover:prose-a:text-blue-500
-                        prose-headings:text-slate-900 prose-headings:font-bold prose-headings:mb-2
-                      "
-                    >
-                      <ReactMarkdown>{preprocessText(m.text)}</ReactMarkdown>
-                    </div>
-                  ) : (
-                    <p className="whitespace-pre-wrap leading-relaxed">
-                      {m.text}
-                    </p>
-                  )}
-
-                  <div className="text-[10px] opacity-70 mt-2 text-right block w-full">
+                {/* Time */}
+                {m.time && (
+                  <div className="text-[10px] opacity-70 mt-1 text-right">
                     {m.time}
                   </div>
-                </div>
+                )}
               </div>
-            ))}
+            </div>
+          ))}
 
-            {typing && (
-              <div className="text-slate-500 text-sm animate-pulse ml-14">
-                🤖 AI is typing…
-              </div>
-            )}
-          </>
+        {typing && (
+          <div className="text-slate-500 text-sm animate-pulse">
+            🤖 typing…
+          </div>
         )}
 
         <div ref={chatEndRef} />
       </div>
 
+      {/* EMOJI POPUP */}
+      {emojiOpen && (
+        <div
+          ref={emojiRef}
+          className="absolute bottom-28 right-3 z-20 bg-white shadow-lg rounded-xl"
+        >
+          <EmojiPicker onEmojiClick={(emoji) => handleEmojiClick(emoji)} />
+        </div>
+      )}
+
       {/* INPUT BAR */}
-      <div className="flex gap-2 items-center w-full">
-        <input
+      <div className="flex gap-2 items-end w-full">
+        <textarea
           disabled={!pdfId}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          onKeyDown={handleKeyDown}
+          onChange={(e) => {
+            setInput(e.target.value);
+            const ta = e.target;
+            ta.style.height = "auto";
+            ta.style.height = ta.scrollHeight + "px";
+          }}
           placeholder={
-            pdfId
-              ? "Ask a question about your document…"
-              : "Upload a file first…"
+            pdfId ? "Ask a question…" : "Upload a file first…"
           }
-          className="
-            w-full border rounded-xl px-4 py-2 text-sm
-            bg-white placeholder-slate-400 text-black
-            focus:ring-2 focus:ring-blue-400 focus:outline-none
-          "
+          rows={1}
+          className="w-full border rounded-xl px-3 py-2 text-sm bg-white placeholder-slate-400 resize-none overflow-hidden max-h-40 outline-none focus:ring-2 focus:ring-blue-400"
         />
 
+        {/* Emoji */}
+        <button
+          onClick={() => setEmojiOpen((p) => !p)}
+          className="px-2 py-2 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-200"
+        >
+          😀
+        </button>
+
+        {/* Attach */}
+        <label className="px-2 py-2 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-200 cursor-pointer">
+          <FiPaperclip />
+          <input type="file" onChange={handleAttachment} className="hidden" />
+        </label>
+
+        {/* Voice */}
+        <button
+          onClick={handleToggleListening}
+          disabled={!hasSpeech || !pdfId}
+          className="px-2 py-2 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-200 disabled:opacity-40"
+        >
+          {listening ? "🎙️" : "🎤"}
+        </button>
+
+        {/* SEND */}
         <button
           onClick={handleSend}
           disabled={!pdfId || !input.trim() || sending}
-          className="
-            px-5 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold
-            disabled:bg-blue-300 shadow-md hover:shadow-lg active:scale-95
-            transition
-          "
+          className="px-5 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold disabled:bg-blue-300"
         >
-          {sending ? "Thinking…" : "Send"}
+          {sending ? "…" : "Send"}
         </button>
       </div>
 
-      {/* FILE UPLOAD & CANCEL */}
+      {/* FILE UPLOAD BAR */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center w-full pt-4 border-t mt-2">
-        <label
-          className="
-            flex items-center justify-between gap-2
-            bg-white border border-blue-300 px-4 py-2 rounded-xl
-            text-blue-700 font-medium cursor-pointer shadow-sm
-            hover:shadow-md transition w-full sm:w-auto
-          "
-        >
+        <label className="flex items-center gap-2 bg-white border border-blue-300 px-4 py-2 rounded-xl text-blue-700 cursor-pointer shadow-sm hover:shadow-md">
           <div className="flex items-center gap-2 min-w-0">
             {file ? (
               file.name.toLowerCase().endsWith(".pdf") ? (
-                <BsFileEarmarkPdfFill className="text-red-500 text-lg shrink-0" />
+                <BsFileEarmarkPdfFill className="text-red-500 text-lg" />
               ) : (
-                <LiaFileWordSolid className="text-blue-500 text-xl shrink-0" />
+                <LiaFileWordSolid className="text-blue-500 text-xl" />
               )
             ) : (
-              <BsFileEarmarkPdfFill className="text-red-400 text-lg opacity-60 shrink-0" />
+              <BsFileEarmarkPdfFill className="text-red-400 text-lg opacity-60" />
             )}
 
-            <span className="truncate block max-w-[200px] sm:max-w-[300px] md:max-w-[400px]">
-              {file ? file.name : "Choose PDF or Word file…"}
+            <span className="truncate max-w-[200px] sm:max-w-[300px] md:max-w-[400px]">
+              {file ? file.name : "Choose PDF or Word file..."}
             </span>
           </div>
 
@@ -352,10 +610,7 @@ export default function PDFChatClient() {
         {file && (
           <button
             onClick={cancelFileSelection}
-            className="
-              px-3 py-2 rounded-xl bg-red-500 text-white text-sm
-              flex items-center gap-1 shadow hover:shadow-md transition
-            "
+            className="px-3 py-2 rounded-xl bg-red-500 text-white text-sm shadow hover:shadow-md flex gap-1 items-center"
           >
             <FiX /> Cancel
           </button>
@@ -364,16 +619,58 @@ export default function PDFChatClient() {
         <button
           onClick={handleUpload}
           disabled={!file || uploading}
-          className="
-            flex items-center gap-2 px-5 py-2 rounded-xl bg-blue-600
-            text-white text-sm font-semibold disabled:bg-blue-300 shadow-md
-            hover:shadow-lg active:scale-95 transition
-          "
+          className="px-5 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold shadow hover:shadow-lg disabled:bg-blue-300 flex items-center gap-2"
         >
           <FiUpload />
           {uploading ? "Processing…" : "Upload & Index File"}
         </button>
       </div>
+
+      {/* UNIVERSAL PREVIEW (PDF + DOCX) */}
+      {(previewUrl || docxHtml) && (
+        <div className="mt-3 w-full">
+          {/* Toggle Button */}
+          <button
+            onClick={() => setPreviewExpanded((prev) => !prev)}
+            className="
+              w-full flex items-center justify-between
+              px-4 py-2 rounded-xl
+              bg-blue-50 text-blue-700 font-medium
+              border border-blue-300
+              shadow-sm hover:bg-blue-100
+              transition
+            "
+          >
+            <span>📄 {previewExpanded ? "Hide Your Document" : "Preview Your Document"}</span>
+            <span>{previewExpanded ? "▲" : "▼"}</span>
+          </button>
+
+          {/* Collapsible Preview */}
+          {previewExpanded && (
+            <div className="mt-2 w-full h-[60vh] border rounded-xl overflow-auto bg-white shadow p-4">
+              
+              {/* PDF PREVIEW */}
+              {previewUrl && (
+                <iframe
+                  src={previewUrl}
+                  className="w-full h-full"
+                  title="PDF preview"
+                />
+              )}
+
+              {/* DOCX PREVIEW */}
+              {docxHtml && (
+                <div
+                  className="prose max-w-none"
+                  dangerouslySetInnerHTML={{ __html: docxHtml }}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
     </div>
+     </>
   );
 }
