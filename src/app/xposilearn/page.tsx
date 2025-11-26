@@ -333,6 +333,7 @@ const openViewer = async (item: any) => {
           </div>
         )}
       </main>
+      <ReturnToTop />
     </>
   );
 }
@@ -453,7 +454,7 @@ function UniversalSectionCard({
                 ))}
               </ul>
 
-              <ReturnToTop />
+              
             </div>
           ))}
 
@@ -571,11 +572,14 @@ function UniversalSectionCard({
                   );
                 })}
 
-                <ReturnToTop />
+                
               </div>
+              
             );
           })}
       </div>
+      
     </div>
+    
   );
 }
