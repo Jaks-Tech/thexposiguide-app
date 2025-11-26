@@ -22,8 +22,8 @@ export default function PDFPage() {
       bg-white 
       flex flex-col 
       items-center 
-      pt-16 
-      pb-20
+      pt-5 
+      pb-30
     ">
 
       {/* PAGE TITLE */}
@@ -32,7 +32,7 @@ export default function PDFPage() {
         sm:text-4xl 
         font-bold 
         text-blue-700 
-        mb-3
+        mb-2
         text-center
       ">
         Chat With Your Doc
@@ -58,14 +58,14 @@ export default function PDFPage() {
       {/* MAIN CHAT CARD */}
       <div className="
         w-full 
-        max-w-7xl 
+        max-w-8xl 
         bg-white 
-        shadow-2xl 
-        rounded-3xl 
+        shadow-10xl 
+        rounded-5xl 
         border 
-        border-slate-200 
-        p-4 
-        sm:p-8 
+        border-slate-1000 
+        p-1 
+        sm:p-10 
         mx-auto
       ">
         <PDFChatClient />
@@ -73,7 +73,7 @@ export default function PDFPage() {
 
       {/* DISCLAIMER */}
       <p className="
-        mt-6 
+        mt-10 
         text-[10px] 
         sm:text-xs 
         text-slate-400 
