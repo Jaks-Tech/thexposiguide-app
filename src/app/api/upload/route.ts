@@ -34,14 +34,14 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData();
 
-    /* -------- Files -------- */
+    // -------- Files --------
     const files = formData.getAll("file") as File[];
     const image = formData.get("image") as File | null;
 
-    /* -------- Fields -------- */
+    // -------- Fields --------
     const category = formData.get("category") as string | null;
     const yearRaw = formData.get("year") as string | null;
-    const module = formData.get("module") as string | null;
+    const module = (formData.get("module") as string | null)?.trim() || null;
 
     const semesterRaw = formData.get("semester") as string | null;
     const semester = semesterRaw ? Number(semesterRaw) : null;
@@ -56,13 +56,12 @@ export async function POST(req: Request) {
       );
     }
 
-    /* -------- Normalize Year -------- */
+    // -------- Normalize Year --------
     const year = normalizeYear(yearRaw);
 
-    /* ----------------------------------------------
-       Determine Folder
-       (Module markdown does NOT use year/semester/unit)
-    ---------------------------------------------- */
+    // ----------------------------------------------
+    // Determine Folder
+    // ----------------------------------------------
     let folderPath = "";
 
     if (category === "notes") {
@@ -70,7 +69,13 @@ export async function POST(req: Request) {
     } else if (category === "papers") {
       folderPath = `papers/${year}`;
     } else if (category === "module") {
-      folderPath = `modules/${module || "general"}`;
+      if (!module) {
+        return NextResponse.json(
+          { error: "Missing module name for module category." },
+          { status: 400 }
+        );
+      }
+      folderPath = `modules/${module}`; // 🔥 Ensures match with Pelvic page
     } else {
       return NextResponse.json(
         { error: "Invalid category." },
@@ -81,7 +86,7 @@ export async function POST(req: Request) {
     const bucket = "xposilearn";
 
     /* ----------------------------------------------
-       Upload All Files
+       Upload All Files (Markdown first)
     ---------------------------------------------- */
     const uploadResults = await Promise.all(
       files.map(async (file) => {
@@ -90,7 +95,7 @@ export async function POST(req: Request) {
         const fileName = `${uniqueId}.${ext}`;
         const fullPath = `${folderPath}/${fileName}`;
 
-        /* Upload to Supabase Storage */
+        // Upload to Supabase Storage
         const buffer = await fileToBuffer(file);
 
         const { error: uploadError } = await supabaseAdmin.storage
@@ -106,14 +111,14 @@ export async function POST(req: Request) {
           return { error: uploadError.message };
         }
 
-        /* Public URL */
+        // Public URL
         const { data: pub } = supabaseAdmin.storage
           .from(bucket)
           .getPublicUrl(fullPath);
 
         const fileUrl = pub?.publicUrl || "";
 
-        /* Markdown slug extraction */
+        // Markdown slug extraction
         let slug = file.name.replace(/\.[^/.]+$/, "");
 
         if (category === "module" && ext === "md") {
@@ -125,19 +130,21 @@ export async function POST(req: Request) {
         /* ----------------------------------------------
            Insert Row into uploads table
         ---------------------------------------------- */
-        const { error: insertErr } = await supabaseAdmin.from("uploads").insert([
-          {
-            filename: file.name,
-            category,
-            year,
-            semester: category === "module" ? null : semester,
-            unit_name: category === "module" ? null : unitName,
-            module,
-            file_url: fileUrl,
-            path: fullPath,
-            slug,
-          },
-        ]);
+        const { error: insertErr } = await supabaseAdmin
+          .from("uploads")
+          .insert([
+            {
+              filename: file.name,
+              category,
+              year,
+              semester: category === "module" ? null : semester,
+              unit_name: category === "module" ? null : unitName,
+              module,                      // 🔥 consistent module storage
+              file_url: fileUrl,
+              path: fullPath,
+              slug,                         // 🔥 page loads using this
+            },
+          ]);
 
         if (insertErr) {
           console.error("❌ DB insert error:", insertErr.message);
@@ -154,10 +161,12 @@ export async function POST(req: Request) {
     let imageUrl: string | null = null;
 
     if (category === "module" && image) {
+      // Thumbnail must use the same slug as markdown
+      const mdRecord = uploadResults.find((r: any) => r.slug);
+      const slug = mdRecord?.slug;
+
       const imgExt = image.name.split(".").pop() || "jpg";
-      const baseFile = files[0];
-      const baseSlug = baseFile.name.replace(/\.[^/.]+$/, "");
-      const imgPath = `modules/${module || "general"}/${baseSlug}.${imgExt}`;
+      const imgPath = `${folderPath}/${slug}.${imgExt}`; // 🔥 MATCHES markdown
 
       const imgBuffer = await fileToBuffer(image);
 
@@ -165,7 +174,7 @@ export async function POST(req: Request) {
         .from(bucket)
         .upload(imgPath, imgBuffer, {
           contentType: image.type,
-          upsert: false,
+          upsert: true,         // 🔥 allow replacing thumbnail cleanly
         });
 
       if (!imgErr) {
