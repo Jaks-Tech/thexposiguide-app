@@ -2,11 +2,13 @@ import { listEntries, loadEntryPreview } from "@/lib/md";
 import EntryCard from "@/components/EntryCard";
 import Head from "next/head";
 import ReturnToTop from "@/components/ReturnToTop";
+
+// ✅ add this
+import GenerateProjectionRealtime from "@/components/GenerateProjectionRealtime";
+
 export default async function UpperExtremitiesPage() {
-  // Fetch metadata from uploads table
   const entries = await listEntries("upper");
 
-  // Fetch preview text for each entry
   const entriesWithPreview = await Promise.all(
     entries.map(async (entry) => {
       const preview = await loadEntryPreview("upper", entry.slug);
@@ -31,7 +33,12 @@ export default async function UpperExtremitiesPage() {
             Explore standardized radiographic positioning for upper-limb anatomy...
           </p>
         </header>
-      <ReturnToTop />
+
+        <ReturnToTop />
+
+        {/* ✅ HERE: realtime generator */}
+        <GenerateProjectionRealtime module="upper" />
+
         {entriesWithPreview.length === 0 ? (
           <p className="text-center text-gray-500">No modules uploaded yet.</p>
         ) : (
@@ -43,7 +50,6 @@ export default async function UpperExtremitiesPage() {
                 entry={entry}
                 subdir="upper"
               />
-              
             ))}
           </section>
         )}

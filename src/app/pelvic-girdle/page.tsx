@@ -1,13 +1,16 @@
+// ✅ PelvicGirdlePage (app/pelvic-girdle/page.tsx)
+
 import { listEntries, loadEntryPreview } from "@/lib/md";
 import EntryCard from "@/components/EntryCard";
 import Head from "next/head";
 import ReturnToTop from "@/components/ReturnToTop";
 
+// ✅ add this
+import GenerateProjectionRealtime from "@/components/GenerateProjectionRealtime";
+
 export default async function PelvicGirdlePage() {
-  // Fetch metadata for pelvic markdown entries
   const entries = await listEntries("pelvic");
 
-  // Fetch preview text for each entry
   const entriesWithPreview = await Promise.all(
     entries.map(async (entry) => {
       const preview = await loadEntryPreview("pelvic", entry.slug);
@@ -26,7 +29,6 @@ export default async function PelvicGirdlePage() {
       </Head>
 
       <main className="mx-auto max-w-6xl px-4 py-10">
-        {/* HEADER */}
         <header className="text-center mb-10">
           <h1 className="text-4xl font-bold text-blue-600">
             Pelvic Girdle / Vertebral Column
@@ -38,7 +40,9 @@ export default async function PelvicGirdlePage() {
 
         <ReturnToTop />
 
-        {/* GRID */}
+        {/* ✅ AI Generator */}
+        <GenerateProjectionRealtime module="pelvic" />
+
         {entriesWithPreview.length === 0 ? (
           <p className="text-center text-gray-500">No modules uploaded yet.</p>
         ) : (
