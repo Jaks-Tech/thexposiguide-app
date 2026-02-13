@@ -32,7 +32,6 @@ function Spinner() {
 export default function GenerateProjectionRealtime({ module }: Props) {
   const [projectionName, setProjectionName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
   const [md, setMd] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -62,7 +61,6 @@ export default function GenerateProjectionRealtime({ module }: Props) {
       if (!res.ok) throw new Error(json?.error || "Generation failed.");
 
       setMd(json.markdown || "");
-      setOpen(true);
     } catch (e: any) {
       setMsg(e?.message || "Something went wrong.");
     } finally {
@@ -70,10 +68,19 @@ export default function GenerateProjectionRealtime({ module }: Props) {
     }
   }
 
+  function clearAll() {
+    if (loading) return;
+    setProjectionName("");
+    setMd("");
+    setMsg(null);
+  }
+
   const cleaned = useMemo(() => stripFrontmatter(md), [md]);
 
   return (
     <div className="mb-8 rounded-2xl border bg-white/50 p-4 sm:p-5">
+
+      {/* INPUT SECTION */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <div className="flex-1">
           <label className="block text-sm font-medium text-gray-700">
@@ -96,7 +103,7 @@ export default function GenerateProjectionRealtime({ module }: Props) {
             </p>
 
             <AnimatePresence>
-              {loading ? (
+              {loading && (
                 <motion.p
                   initial={{ opacity: 0, y: -2 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -105,33 +112,36 @@ export default function GenerateProjectionRealtime({ module }: Props) {
                 >
                   🤖 XposiAI is generating…
                 </motion.p>
-              ) : null}
+              )}
             </AnimatePresence>
           </div>
         </div>
 
-        <button
-          onClick={generate}
-          disabled={loading}
-          className="relative h-[42px] w-full sm:w-auto overflow-hidden rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white disabled:opacity-70"
-        >
-          {/* shimmer */}
-          <span
-            className={`pointer-events-none absolute inset-0 opacity-0 ${
-              loading ? "opacity-100" : ""
-            }`}
+        {/* BUTTON GROUP */}
+        <div className="flex gap-2 w-full sm:w-auto">
+          <button
+            onClick={generate}
+            disabled={loading}
+            className="relative h-[42px] flex-1 sm:flex-none overflow-hidden rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white disabled:opacity-70"
           >
-            <span className="absolute inset-0 animate-pulse bg-white/10" />
-          </span>
+            <span className="relative flex items-center justify-center gap-2">
+              {loading ? <Spinner /> : null}
+              {loading ? "Generating…" : "Generate"}
+            </span>
+          </button>
 
-          <span className="relative flex items-center justify-center gap-2">
-            {loading ? <Spinner /> : null}
-            {loading ? "Generating…" : "Generate"}
-          </span>
-        </button>
+          <button
+            onClick={clearAll}
+            disabled={loading || (!projectionName && !md)}
+            className="h-[42px] px-4 text-sm rounded-xl border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50"
+          >
+            Clear
+          </button>
+        </div>
       </div>
 
-      {msg ? (
+      {/* ERROR MESSAGE */}
+      {msg && (
         <motion.p
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
@@ -139,76 +149,67 @@ export default function GenerateProjectionRealtime({ module }: Props) {
         >
           {msg}
         </motion.p>
-      ) : null}
+      )}
 
-      {/* Modal */}
+      {/* RESULT PANEL */}
       <AnimatePresence>
-        {open ? (
+        {md && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            onClick={() => setOpen(false)}
+            transition={{ duration: 0.3 }}
+            className="mt-6 rounded-2xl border bg-white shadow-lg"
           >
-            {/* Backdrop */}
-            <motion.div
-              className="absolute inset-0 bg-black/50"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            />
-
-            {/* Panel */}
-            <motion.div
-              className="relative w-full max-w-3xl rounded-2xl bg-white p-4 sm:p-6 shadow-xl"
-              initial={{ opacity: 0, scale: 0.96, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.98, y: 8 }}
-              transition={{ type: "spring", stiffness: 260, damping: 22 }}
-              onClick={(e) => e.stopPropagation()}
-              role="dialog"
-              aria-modal="true"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-lg font-semibold">Generated Projection</h2>
-                  <p className="text-xs text-gray-500">Key: {key}</p>
-                </div>
-                <button
-                  className="rounded-lg border px-3 py-1 text-sm"
-                  onClick={() => setOpen(false)}
-                >
-                  Close
-                </button>
+            {/* HEADER */}
+            <div className="flex items-center justify-between px-4 py-3 border-b bg-slate-50">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-800">
+                  Generated Projection
+                </h2>
+                <p className="text-xs text-gray-500">Key: {key}</p>
               </div>
 
-              <div className="mt-4 max-h-[70vh] overflow-auto rounded-xl border bg-white p-4">
-                <div className="prose prose-sm sm:prose-base max-w-none prose-ul:my-2 prose-li:my-1">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {cleaned}
-                  </ReactMarkdown>
-                </div>
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="flex gap-2">
                 <button
-                  className="rounded-xl border px-4 py-2 text-sm"
+                  className="rounded-lg border px-3 py-1 text-xs hover:bg-slate-100"
                   onClick={() => navigator.clipboard.writeText(md)}
                 >
-                  Copy markdown
+                  Copy
                 </button>
+
                 <button
-                  className="rounded-xl border px-4 py-2 text-sm disabled:opacity-60"
+                  className="rounded-lg border px-3 py-1 text-xs hover:bg-slate-100 disabled:opacity-60"
                   onClick={generate}
                   disabled={loading}
                 >
-                  {loading ? "Refreshing…" : "Show again"}
+                  {loading ? "Refreshing…" : "Regenerate"}
                 </button>
               </div>
-            </motion.div>
+            </div>
+
+            {/* CONTENT (natural expansion) */}
+            <div className="p-6 bg-white">
+              <div className="prose prose-sm sm:prose-base max-w-none prose-ul:my-2 prose-li:my-1">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    a: ({ node, ...props }) => (
+                      <a
+                        {...props}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      />
+                    ),
+                  }}
+                >
+                  {cleaned}
+                </ReactMarkdown>
+              </div>
+            </div>
           </motion.div>
-        ) : null}
+        )}
       </AnimatePresence>
     </div>
   );

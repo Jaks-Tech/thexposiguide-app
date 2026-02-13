@@ -6,7 +6,8 @@ import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Script from "next/script";
-import HydratedError from "@/components/HydratedError";  
+import SecondaryNavBar from "@/components/SecondaryNavBar";
+import HydratedError from "@/components/HydratedError";
 import AnalyticsHeartbeat from "@/components/AnalyticsHeartbeat";
 
 export const metadata: Metadata = {
@@ -15,13 +16,28 @@ export const metadata: Metadata = {
   icons: { icon: "/finalxposi.svg" },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className="min-h-screen flex flex-col bg-white text-neutral-900"
+        className="relative min-h-screen flex flex-col text-neutral-900"
       >
+        {/* 🌫 GLOBAL BACKGROUND IMAGE */}
+        <div className="fixed inset-0 -z-20">
+          <img
+            src="/bg.png"
+            alt="Background"
+            className="w-full h-full object-cover"
+          />
+        </div>
+
+        {/* 🤍 SOFT WHITE OVERLAY FOR READABILITY */}
+        <div className="fixed inset-0 -z-10 bg-white/80 backdrop-blur-[2px]" />
 
         {/* ❤️ REALTIME USER HEARTBEAT */}
         <AnalyticsHeartbeat />
@@ -31,15 +47,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Header />
         </HydratedError>
 
-        {/* MARQUEE */}
-        <div className="overflow-hidden bg-gradient-to-r from-blue-700 via-blue-600 to-blue-800 text-white py-2 shadow-md">
-          <div className="whitespace-nowrap animate-marquee font-medium text-sm sm:text-base tracking-wide">
-            ⚡ Welcome to The XPosiGuide — Learn, Revise & Practice!
-          </div>
-        </div>
+        {/* SECONDARY NAVBAR */}
+        <HydratedError>
+          <SecondaryNavBar />
+        </HydratedError>
 
         {/* MAIN CONTENT */}
-        <main className="flex-grow w-full">
+        <main className="flex-grow w-full relative z-10">
           {children}
         </main>
 
@@ -48,13 +62,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Footer />
         </HydratedError>
 
-        {/* ✅ FIX: Smart Scroll Restoration */}
+        {/* ✅ SMART SCROLL RESTORATION */}
         <Script id="scroll-restore-handler" strategy="afterInteractive">
           {`
             if ('scrollRestoration' in history) {
               const path = window.location.pathname;
-
-              // Only PDF AI uses natural scroll
               if (path.startsWith('/pdf-ai')) {
                 history.scrollRestoration = 'auto';
               } else {
@@ -64,7 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           `}
         </Script>
 
-        {/* MAILERLITE SCRIPT */}
+        {/* 📩 MAILERLITE SCRIPT */}
         <Script id="mailerlite-universal" strategy="afterInteractive">
           {`
             (function(w,d,e,u,f,l,n){
@@ -75,7 +87,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             ml('account','1888147');
           `}
         </Script>
-
       </body>
     </html>
   );

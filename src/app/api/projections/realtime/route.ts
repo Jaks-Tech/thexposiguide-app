@@ -8,8 +8,10 @@ type CacheItem = { markdown: string; expiresAt: number };
 
 const TTL_MS = 24 * 60 * 60 * 1000;
 
-// Best-effort in-memory cache (note: not reliable across serverless instances)
-const g = globalThis as unknown as { __projectionCache?: Map<string, CacheItem> };
+// In-memory cache (best-effort)
+const g = globalThis as unknown as {
+  __projectionCache?: Map<string, CacheItem>;
+};
 g.__projectionCache ??= new Map<string, CacheItem>();
 const cache = g.__projectionCache;
 
@@ -37,12 +39,14 @@ function buildPrompt(module: ModuleKey, projectionName: string) {
   const topic = normalize(projectionName);
 
   return `
-You are a certified radiography educator writing a clinical X-ray positioning guide.
+You are a certified radiography educator and clinical researcher.
 
-Write a PROFESSIONAL, EXAM-READY markdown lesson for the following:
+Write a PROFESSIONAL, EXAM-READY markdown lesson using CURRENT authoritative medical sources.
 
 SECTION: ${section}
 TOPIC: ${topic}
+
+You may use web research to ensure accuracy.
 
 ────────────────────────
 CONTENT REQUIREMENTS
@@ -54,68 +58,32 @@ description: "Standard radiographic positioning techniques and evaluation criter
 ---
 
 2. Use clear headings and bullet points.
-3. Do NOT include citations, references, or external links.
-4. Write in concise, instructional language used in radiography textbooks.
-5. Use metric and imperial units where applicable.
+3. Use concise, textbook-level instructional language.
+4. Use metric and imperial units.
+5. Base content on authoritative radiography and radiology sources.
 
 ────────────────────────
 REQUIRED SECTIONS (IN THIS ORDER)
 ────────────────────────
 
 ## Patient Preparation
-- Explain the procedure to the patient.
-- Remove jewelry, rings, or metallic objects from the area of interest.
-- Position the patient comfortably.
-- Apply lead shielding when appropriate.
-
 ## Basic Projections
-(If applicable, include more than one basic projection)
-
-### Projection Name
-**Positioning:**
-- Describe patient position.
-- Describe part position and rotation.
-- Describe finger/limb positioning where applicable.
-
-**Central Ray (CR):**
-- Direction
-- Anatomical landmark
-
-**IR / Detector:**
-- Placement and orientation
-
-**SID (Source-to-Image Distance):**
-- Standard SID in cm and inches.
-
-**Collimation:**
-- Anatomical coverage required.
-
 ## Other Projections
-(Include specialty or alternate projections when applicable)
-
-### Projection Name
-Repeat the same sub-structure:
-- Positioning
-- Central Ray (CR)
-- IR / Detector
-- SID
-- Collimation
-
 ## Image Evaluation Criteria
-- Key anatomy that must be demonstrated.
-- Correct positioning indicators.
-- Acceptable visualization standards.
-
 ## Common Pathologies Demonstrated
-- Relevant fractures, dislocations, degenerative changes, and soft tissue findings.
-
 ## Common Positioning Errors
-- Frequent mistakes and how they affect image quality.
-
 ## Radiographic Tips
-- Practical positioning tips.
-- Patient comfort and immobilization advice.
-- Breathing instructions if relevant.
+
+────────────────────────
+REFERENCES
+────────────────────────
+
+## References
+- Provide 3–6 authoritative sources.
+- Include direct URLs.
+- Prefer radiology societies, universities, textbooks, peer-reviewed medical sources.
+- Do NOT fabricate links.
+- Only include real, verifiable links.
 
 ────────────────────────
 STYLE RULES
@@ -128,7 +96,6 @@ STYLE RULES
 }
 
 function cleanupExpired(now: number) {
-  // lightweight cleanup to prevent unbounded growth
   if (cache.size < 250) return;
   for (const [k, v] of cache.entries()) {
     if (v.expiresAt <= now) cache.delete(k);
@@ -171,17 +138,25 @@ export async function POST(req: Request) {
       );
     }
 
-    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     const prompt = buildPrompt(module, projectionName);
 
-    const completion = await client.chat.completions.create({
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-      temperature: 0.4,
-      messages: [{ role: "user", content: prompt }],
+    const response = await client.responses.create({
+      model: process.env.OPENAI_MODEL || "gpt-4.1",
+      temperature: 0.3,
+      tools: [
+        {
+          type: "web_search",
+        },
+      ],
+      input: prompt,
     });
 
-    const markdown = completion.choices?.[0]?.message?.content?.trim();
+    const markdown = response.output_text?.trim();
+
     if (!markdown) {
       return NextResponse.json(
         { error: "Empty model response." },
