@@ -12,7 +12,7 @@ export default function Header() {
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
 
-  // Load user
+  // Load user - This preserves your heartbeat/active user context
   useEffect(() => {
     const loadUser = async () => {
       const { data } = await supabase.auth.getUser();
@@ -41,9 +41,7 @@ export default function Header() {
           {/* RIGHT AREA */}
           <div className="flex items-center gap-3 sm:gap-4">
 
-
-
-            {/* Active Users Badge */}
+            {/* Active Users Badge - Restored with context */}
             <ActiveUsersBadge />
 
           </div>

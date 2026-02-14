@@ -44,7 +44,7 @@ export default function RevisionWorkspace() {
         {!focusMode && (
           <div className="text-center mb-8 sm:mb-16">
             <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-blue-700">
-              Revision Workspace
+              Check your Generated Projections for Revision 
             </h1>
             <p className="mt-3 sm:mt-5 text-gray-600 max-w-2xl mx-auto text-base sm:text-lg px-2">
               Your intelligent 24-hour projection vault. Master positioning and track progress with AI guidance.

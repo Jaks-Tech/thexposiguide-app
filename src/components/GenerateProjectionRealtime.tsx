@@ -179,7 +179,7 @@ export default function GenerateProjectionRealtime({ module }: Props) {
             href="/revision-workspace"
             className="w-full sm:w-auto text-center text-xs font-bold px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-all"
           >
-            Open Revision Workspace →
+            Revise All Generated Projections →
           </Link>
         </div>
       </div>

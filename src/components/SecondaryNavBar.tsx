@@ -174,7 +174,7 @@ function NavContent({ setIsMenuOpen }: { setIsMenuOpen: (o: boolean) => void }) 
           
           <Link href="/revision-workspace" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50 transition-colors">
             <MdMenuBook size={20} className="text-orange-600" /> 
-            <span className="font-medium">Revision Workspace</span>
+            <span className="font-medium">Your-Generated-Projections</span>
           </Link>
         </div>
       </Dropdown>
