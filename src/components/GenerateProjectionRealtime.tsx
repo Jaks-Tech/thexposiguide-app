@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { AnimatePresence, motion } from "framer-motion";
+import { supabase } from "@/lib/supabaseClient";
+import Link from "next/link";
 
 function slugify(input: string) {
   return input
@@ -34,11 +36,29 @@ export default function GenerateProjectionRealtime({ module }: Props) {
   const [loading, setLoading] = useState(false);
   const [md, setMd] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  const [vaultCount, setVaultCount] = useState(0);
 
   const key = useMemo(
     () => slugify(`${module}-${projectionName}`),
     [module, projectionName]
   );
+
+  async function fetchVaultCount() {
+    const name =
+      localStorage.getItem("rai_name") || "The RAI Expert";
+
+    const { count } = await supabase
+      .from("revision_projections")
+      .select("*", { count: "exact", head: true })
+      .eq("created_by", name)
+      .gt("expires_at", new Date().toISOString());
+
+    if (count !== null) setVaultCount(count);
+  }
+
+  useEffect(() => {
+    fetchVaultCount();
+  }, []);
 
   async function generate() {
     setMsg(null);
@@ -61,6 +81,22 @@ export default function GenerateProjectionRealtime({ module }: Props) {
       if (!res.ok) throw new Error(json?.error || "Generation failed.");
 
       setMd(json.markdown || "");
+
+      await fetch("/api/revision/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          created_by:
+            localStorage.getItem("rai_name") ||
+            "The RAI Expert",
+          module,
+          projection_name: name,
+          markdown: json.markdown,
+        }),
+      });
+
+      fetchVaultCount();
+
     } catch (e: any) {
       setMsg(e?.message || "Something went wrong.");
     } finally {
@@ -79,6 +115,8 @@ export default function GenerateProjectionRealtime({ module }: Props) {
 
   return (
     <div className="mb-8 rounded-2xl border bg-white/50 p-4 sm:p-5">
+
+
 
       {/* INPUT SECTION */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -99,7 +137,7 @@ export default function GenerateProjectionRealtime({ module }: Props) {
 
           <div className="mt-1 flex items-center gap-2">
             <p className="text-xs text-gray-500">
-              Generated on demand and cached temporarily (expires in ~24 hours).
+              Generated on demand and stored in your Revision Workspace for 24 hours.
             </p>
 
             <AnimatePresence>
@@ -150,7 +188,19 @@ export default function GenerateProjectionRealtime({ module }: Props) {
           {msg}
         </motion.p>
       )}
+      {/* REVISION WORKSPACE BANNER */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="text-sm text-gray-600">
+          Vault: <span className="font-semibold text-blue-600">{vaultCount}</span> saved projections
+        </div>
 
+        <Link
+          href="/revision-workspace"
+          className="text-sm px-4 py-2 rounded-xl border bg-blue-600 text-white hover:bg-blue-700 transition"
+        >
+          Explore Your Generated Projections
+        </Link>
+      </div>
       {/* RESULT PANEL */}
       <AnimatePresence>
         {md && (
@@ -161,7 +211,6 @@ export default function GenerateProjectionRealtime({ module }: Props) {
             transition={{ duration: 0.3 }}
             className="mt-6 rounded-2xl border bg-white shadow-lg"
           >
-            {/* HEADER */}
             <div className="flex items-center justify-between px-4 py-3 border-b bg-slate-50">
               <div>
                 <h2 className="text-sm font-semibold text-gray-800">
@@ -188,22 +237,9 @@ export default function GenerateProjectionRealtime({ module }: Props) {
               </div>
             </div>
 
-            {/* CONTENT (natural expansion) */}
             <div className="p-6 bg-white">
               <div className="prose prose-sm sm:prose-base max-w-none prose-ul:my-2 prose-li:my-1">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    a: ({ node, ...props }) => (
-                      <a
-                        {...props}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
-                      />
-                    ),
-                  }}
-                >
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {cleaned}
                 </ReactMarkdown>
               </div>

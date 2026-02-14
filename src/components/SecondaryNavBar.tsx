@@ -53,8 +53,6 @@ function Dropdown({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const ref = useRef<HTMLDivElement | null>(null);
 
-  const isDesktop = typeof window !== "undefined" && window.innerWidth >= 1024;
-
   const handleMouseEnter = () => {
     if (window.innerWidth >= 1024) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -66,7 +64,7 @@ function Dropdown({
     if (window.innerWidth >= 1024) {
       timeoutRef.current = setTimeout(() => {
         setOpen(false);
-      }, 150); // small delay prevents flicker
+      }, 150);
     }
   };
 
@@ -115,7 +113,7 @@ export default function SecondaryNavBar() {
           >
             <Link
               href="/upper-extremities"
-              className="flex items-center gap-2 px-4 py-2 hover:bg-blue-50"
+              className="flex items-center gap-2 px-4 py-2 hover:bg-blue-50 transition-colors"
             >
               <GiHand size={18} className="text-teal-600" />
               Upper Extremities
@@ -123,7 +121,7 @@ export default function SecondaryNavBar() {
 
             <Link
               href="/lower-extremities"
-              className="flex items-center gap-2 px-4 py-2 hover:bg-blue-50"
+              className="flex items-center gap-2 px-4 py-2 hover:bg-blue-50 transition-colors"
             >
               <GiLeg size={18} className="text-green-600" />
               Lower Extremities
@@ -131,16 +129,25 @@ export default function SecondaryNavBar() {
 
             <Link
               href="/pelvic-girdle"
-              className="flex items-center gap-2 px-4 py-2 hover:bg-blue-50"
+              className="flex items-center gap-2 px-4 py-2 hover:bg-blue-50 transition-colors"
             >
               <GiPelvisBone size={18} className="text-orange-600" />
               Pelvic Girdle
             </Link>
 
+            {/* Separator line for visual clarity */}
+            <div className="border-t border-gray-100 my-1" />
 
+            <Link
+              href="/revision-workspace"
+              className="flex items-center gap-2 px-4 py-2 hover:bg-blue-50 transition-colors"
+            >
+              <MdMenuBook size={18} className="text-orange-600" />
+              Generated Projections
+            </Link>
           </Dropdown>
 
-          {/* Home */}
+          {/* Studio */}
           <NavItem href="/projections-studio" icon={<FaFlask size={18} />}>
             Generate Your Projections
           </NavItem>
