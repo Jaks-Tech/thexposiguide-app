@@ -28,6 +28,10 @@ export default function RevisionVaultList({
 
   useEffect(() => {
     onFocusChange(!!expandedId);
+    // Fix for mobile hanging: Ensure the view starts at the top when entering Focus Mode
+    if (expandedId) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }, [expandedId, onFocusChange]);
 
   async function markRevised(id: string, value: boolean) {
@@ -51,6 +55,9 @@ export default function RevisionVaultList({
     setExpandedId((prev) => (prev === id ? null : id));
   }
 
+  /* ===============================
+      FOCUS MODE (Single Item View)
+  =============================== */
   if (expandedId) {
     const item = items.find((i) => i.id === expandedId);
     if (!item) return null;
@@ -59,10 +66,10 @@ export default function RevisionVaultList({
       <AnimatePresence mode="wait">
         <motion.div
           key="focus"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.2 }}
         >
           <div className="text-center mb-10">
             <h1 className="text-4xl font-bold text-blue-700">Focus Mode</h1>
@@ -82,6 +89,7 @@ export default function RevisionVaultList({
                 >
                   {item.is_revised ? "Undo" : "Mark Revised"}
                 </button>
+
                 <button
                   onClick={() => {
                     deleteItem(item.id);
@@ -91,6 +99,7 @@ export default function RevisionVaultList({
                 >
                   Delete
                 </button>
+
                 <button
                   onClick={() => setExpandedId(null)}
                   className="text-sm px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
@@ -111,6 +120,9 @@ export default function RevisionVaultList({
     );
   }
 
+  /* ===============================
+      GRID MODE (List View)
+  =============================== */
   return (
     <div className="relative">
       <div className="text-center mb-12">
@@ -123,10 +135,7 @@ export default function RevisionVaultList({
       {items.length === 0 ? (
         <EmptyState />
       ) : (
-        <motion.div
-          layout
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {items.map((item) => {
             const preview =
               item.markdown.replace(/[#>*`-]/g, "").slice(0, 160) + "...";
@@ -134,7 +143,6 @@ export default function RevisionVaultList({
             return (
               <motion.div
                 key={item.id}
-                layout
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className={`flex flex-col rounded-2xl border bg-white p-6 shadow-md transition hover:shadow-xl ${
@@ -157,14 +165,16 @@ export default function RevisionVaultList({
                   >
                     {item.is_revised ? "Undo" : "Revised"}
                   </button>
+
                   <button
                     onClick={() => deleteItem(item.id)}
                     className="text-[11px] font-bold uppercase tracking-wider border border-red-50 text-red-500 px-2 py-1.5 rounded hover:bg-red-50 transition"
                   >
                     Delete
                   </button>
+
                   <button
-                    onClick={() => toggleExpand(item.id)}
+                    onClick={() => setExpandedId(item.id)}
                     className="text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 transition ml-auto"
                   >
                     Open
@@ -173,20 +183,16 @@ export default function RevisionVaultList({
               </motion.div>
             );
           })}
-        </motion.div>
+        </div>
       )}
     </div>
   );
 }
 
-/* ===============================
-    FANCY EMPTY STATE COMPONENT
-=============================== */
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-20 overflow-hidden">
       <div className="relative w-64 h-64 flex items-center justify-center">
-        {/* Animated Radar Rings */}
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1.5, opacity: 0 }}
@@ -199,8 +205,6 @@ function EmptyState() {
           transition={{ repeat: Infinity, duration: 2, delay: 0.5, ease: "easeOut" }}
           className="absolute inset-0 border-2 border-purple-400 rounded-full"
         />
-        
-        {/* Central Glowing Icon/Orb */}
         <motion.div
           animate={{ 
             scale: [1, 1.1, 1],
@@ -213,8 +217,6 @@ function EmptyState() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
         </motion.div>
-
-        {/* Floating "Particles" */}
         {[...Array(6)].map((_, i) => (
           <motion.div
             key={i}
@@ -236,7 +238,6 @@ function EmptyState() {
           />
         ))}
       </div>
-
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
