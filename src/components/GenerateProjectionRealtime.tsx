@@ -44,9 +44,7 @@ export default function GenerateProjectionRealtime({ module }: Props) {
   );
 
   async function fetchVaultCount() {
-    const name =
-      localStorage.getItem("rai_name") || "The RAI Expert";
-
+    const name = localStorage.getItem("rai_name") || "The RAI Expert";
     const { count } = await supabase
       .from("revision_projections")
       .select("*", { count: "exact", head: true })
@@ -62,7 +60,6 @@ export default function GenerateProjectionRealtime({ module }: Props) {
 
   async function generate() {
     setMsg(null);
-
     const name = projectionName.trim();
     if (name.length < 3) {
       setMsg("Type a longer projection name.");
@@ -86,9 +83,7 @@ export default function GenerateProjectionRealtime({ module }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          created_by:
-            localStorage.getItem("rai_name") ||
-            "The RAI Expert",
+          created_by: localStorage.getItem("rai_name") || "The RAI Expert",
           module,
           projection_name: name,
           markdown: json.markdown,
@@ -96,7 +91,6 @@ export default function GenerateProjectionRealtime({ module }: Props) {
       });
 
       fetchVaultCount();
-
     } catch (e: any) {
       setMsg(e?.message || "Something went wrong.");
     } finally {
@@ -114,131 +108,127 @@ export default function GenerateProjectionRealtime({ module }: Props) {
   const cleaned = useMemo(() => stripFrontmatter(md), [md]);
 
   return (
-    <div className="mb-8 rounded-2xl border bg-white/50 p-4 sm:p-5">
-
-
-
+    <div className="mb-8 rounded-2xl border border-gray-100 bg-white/70 backdrop-blur-sm p-4 sm:p-6 shadow-sm">
+      
       {/* INPUT SECTION */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-        <div className="flex-1">
-          <label className="block text-sm font-medium text-gray-700">
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-semibold text-gray-800">
             Need a projection that’s not listed?
           </label>
+          
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              value={projectionName}
+              onChange={(e) => setProjectionName(e.target.value)}
+              placeholder='e.g., "AP Axial Clavicle"'
+              className="h-[44px] flex-1 rounded-xl border border-gray-200 px-4 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") generate();
+              }}
+            />
 
-          <input
-            value={projectionName}
-            onChange={(e) => setProjectionName(e.target.value)}
-            placeholder='e.g., "AP Axial Clavicle"'
-            className="mt-1 h-[42px] w-full rounded-xl border px-3 text-sm outline-none focus:ring"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") generate();
-            }}
-          />
+            <div className="flex gap-2">
+              <button
+                onClick={generate}
+                disabled={loading}
+                className="h-[44px] flex-1 sm:flex-none sm:px-6 rounded-xl bg-blue-600 text-sm font-bold text-white shadow-md active:scale-95 transition-all disabled:opacity-70"
+              >
+                {loading ? <div className="flex items-center gap-2 justify-center"><Spinner /><span>Wait...</span></div> : "Generate"}
+              </button>
 
-          <div className="mt-1 flex items-center gap-2">
-            <p className="text-xs text-gray-500">
-              Generated on demand and stored in your Revision Workspace for 24 hours.
+              <button
+                onClick={clearAll}
+                disabled={loading || (!projectionName && !md)}
+                className="h-[44px] px-4 text-sm font-medium rounded-xl border border-gray-200 bg-white hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-50"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <p className="text-[11px] sm:text-xs text-gray-500 leading-tight">
+              AI-generated and stored in your vault for 24h.
             </p>
-
             <AnimatePresence>
               {loading && (
                 <motion.p
-                  initial={{ opacity: 0, y: -2 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -2 }}
-                  className="text-xs font-medium text-blue-600"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-[11px] sm:text-xs font-bold text-blue-600 animate-pulse"
                 >
-                  🤖 XposiAI is generating…
+                  🤖 Generating...
                 </motion.p>
               )}
             </AnimatePresence>
           </div>
         </div>
 
-        {/* BUTTON GROUP */}
-        <div className="flex gap-2 w-full sm:w-auto">
-          <button
-            onClick={generate}
-            disabled={loading}
-            className="relative h-[42px] flex-1 sm:flex-none overflow-hidden rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white disabled:opacity-70"
-          >
-            <span className="relative flex items-center justify-center gap-2">
-              {loading ? <Spinner /> : null}
-              {loading ? "Generating…" : "Generate"}
+        {/* VAULT BANNER - Optimized for Mobile */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 rounded-xl bg-blue-50 border border-blue-100 mt-2">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-xs font-medium text-blue-900">
+              Vault: <span className="font-bold">{vaultCount}</span> Projections
             </span>
-          </button>
+          </div>
 
-          <button
-            onClick={clearAll}
-            disabled={loading || (!projectionName && !md)}
-            className="h-[42px] px-4 text-sm rounded-xl border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50"
+          <Link
+            href="/revision-workspace"
+            className="w-full sm:w-auto text-center text-xs font-bold px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-all"
           >
-            Clear
-          </button>
+            Open Revision Workspace →
+          </Link>
         </div>
       </div>
 
       {/* ERROR MESSAGE */}
       {msg && (
         <motion.p
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-3 text-sm text-red-600"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mt-4 text-xs font-medium text-red-500 bg-red-50 p-2 rounded-lg border border-red-100"
         >
-          {msg}
+          ⚠️ {msg}
         </motion.p>
       )}
-      {/* REVISION WORKSPACE BANNER */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="text-sm text-gray-600">
-          Vault: <span className="font-semibold text-blue-600">{vaultCount}</span> saved projections
-        </div>
 
-        <Link
-          href="/revision-workspace"
-          className="text-sm px-4 py-2 rounded-xl border bg-blue-600 text-white hover:bg-blue-700 transition"
-        >
-          Explore Your Generated Projections
-        </Link>
-      </div>
       {/* RESULT PANEL */}
       <AnimatePresence>
         {md && (
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="mt-6 rounded-2xl border bg-white shadow-lg"
+            className="mt-6 rounded-xl border border-gray-100 bg-white shadow-xl overflow-hidden"
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b bg-slate-50">
-              <div>
-                <h2 className="text-sm font-semibold text-gray-800">
-                  Generated Projection
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 border-b bg-gray-50 gap-2">
+              <div className="overflow-hidden">
+                <h2 className="text-xs font-bold text-gray-900 truncate uppercase tracking-wider">
+                  {projectionName || "Result"}
                 </h2>
-                <p className="text-xs text-gray-500">Key: {key}</p>
               </div>
 
               <div className="flex gap-2">
                 <button
-                  className="rounded-lg border px-3 py-1 text-xs hover:bg-slate-100"
+                  className="flex-1 sm:flex-none rounded-lg border border-gray-200 px-3 py-1.5 text-[10px] font-bold uppercase bg-white hover:bg-gray-50 transition-colors"
                   onClick={() => navigator.clipboard.writeText(md)}
                 >
                   Copy
                 </button>
-
                 <button
-                  className="rounded-lg border px-3 py-1 text-xs hover:bg-slate-100 disabled:opacity-60"
+                  className="flex-1 sm:flex-none rounded-lg border border-gray-200 px-3 py-1.5 text-[10px] font-bold uppercase bg-white hover:bg-gray-50 disabled:opacity-60 transition-colors"
                   onClick={generate}
                   disabled={loading}
                 >
-                  {loading ? "Refreshing…" : "Regenerate"}
+                  Regen
                 </button>
               </div>
             </div>
 
-            <div className="p-6 bg-white">
-              <div className="prose prose-sm sm:prose-base max-w-none prose-ul:my-2 prose-li:my-1">
+            <div className="p-4 sm:p-6 overflow-x-auto">
+              <div className="prose prose-blue prose-sm max-w-none prose-headings:text-blue-900 prose-li:text-gray-700">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {cleaned}
                 </ReactMarkdown>

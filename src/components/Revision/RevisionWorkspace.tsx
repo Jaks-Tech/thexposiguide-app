@@ -5,14 +5,13 @@ import { supabase } from "@/lib/supabaseClient";
 import RevisionVaultList, { Item } from "./RevisionVaultList";
 
 export default function RevisionWorkspace() {
-  const [items, setItems] = useState<Item[]>([]); // Using the typed Item interface
+  const [items, setItems] = useState<Item[]>([]);
   const [name, setName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [focusMode, setFocusMode] = useState(false);
 
   async function fetchVault(userName: string) {
     setLoading(true);
-
     const { data } = await supabase
       .from("revision_projections")
       .select("*")
@@ -21,7 +20,6 @@ export default function RevisionWorkspace() {
       .order("created_at", { ascending: false });
 
     if (data) setItems(data as Item[]);
-
     setLoading(false);
   }
 
@@ -32,35 +30,34 @@ export default function RevisionWorkspace() {
   }, []);
 
   return (
-    <div className="relative min-h-screen px-6 py-20 overflow-hidden">
-      {/* Neon Glow Background */}
+    <div className="relative min-h-screen px-4 sm:px-6 py-10 sm:py-20 overflow-x-hidden">
+      {/* Subtle Background Glow - Optimized for mobile performance */}
       {!focusMode && (
-        <div className="absolute inset-0 -z-10 pointer-events-none">
-          <div className="absolute top-10 left-10 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-10 right-10 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
+          <div className="absolute -top-20 -left-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
         </div>
       )}
 
       <div className="max-w-6xl mx-auto">
-        {/* HEADER */}
+        {/* HEADER - Collapses on mobile */}
         {!focusMode && (
-          <div className="text-center mb-16">
-            <h1 className="text-5xl font-bold tracking-tight text-blue-700">
+          <div className="text-center mb-8 sm:mb-16">
+            <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-blue-700">
               Revision Workspace
             </h1>
-
-            <p className="mt-5 text-gray-600 max-w-2xl mx-auto text-lg">
-              Your intelligent 24-hour projection vault. Master positioning,
-              track progress, and revise with structured AI-enhanced guidance.
+            <p className="mt-3 sm:mt-5 text-gray-600 max-w-2xl mx-auto text-base sm:text-lg px-2">
+              Your intelligent 24-hour projection vault. Master positioning and track progress with AI guidance.
             </p>
           </div>
         )}
 
-        {/* VAULT CONTAINER (Now comes first) */}
-        <div className="bg-white/70 backdrop-blur-md border rounded-3xl shadow-xl p-8 sm:p-12 mb-16">
+        {/* VAULT CONTAINER - Full width on small screens, rounded on large */}
+        <div className="bg-white/80 backdrop-blur-md border border-gray-100 rounded-2xl sm:rounded-3xl shadow-xl p-4 sm:p-12">
           {loading ? (
-            <div className="text-center py-12 text-gray-500">
-              Loading your revision vault...
+            <div className="flex flex-col items-center justify-center py-20 space-y-4">
+              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              <p className="text-gray-500 font-medium">Loading vault...</p>
             </div>
           ) : (
             <RevisionVaultList
@@ -70,60 +67,7 @@ export default function RevisionWorkspace() {
             />
           )}
         </div>
-
-        {/* COOL REVISION FEATURES (Now moved below the vault) */}
-        {!focusMode && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <FeatureCard
-              title="High-Yield Focus"
-              desc="Prioritize the most exam-relevant positioning techniques."
-              color="blue"
-            />
-            <FeatureCard
-              title="24-Hour Smart Vault"
-              desc="Temporary storage keeps your revision sharp and active."
-              color="purple"
-            />
-            <FeatureCard
-              title="Progress Tracking"
-              desc="Mark projections as revised and track completion."
-              color="cyan"
-            />
-            <FeatureCard
-              title="AI Structured Output"
-              desc="Exam-ready formatting with anatomy and CR precision."
-              color="indigo"
-            />
-          </div>
-        )}
       </div>
-    </div>
-  );
-}
-
-/* Neon Feature Card */
-function FeatureCard({
-  title,
-  desc,
-  color,
-}: {
-  title: string;
-  desc: string;
-  color: string;
-}) {
-  const glowMap: Record<string, string> = {
-    blue: "shadow-[0_0_20px_rgba(59,130,246,0.5)]",
-    purple: "shadow-[0_0_20px_rgba(168,85,247,0.5)]",
-    cyan: "shadow-[0_0_20px_rgba(34,211,238,0.5)]",
-    indigo: "shadow-[0_0_20_px_rgba(99,102,241,0.5)]",
-  };
-
-  return (
-    <div
-      className={`rounded-2xl border p-6 bg-white transition duration-300 hover:scale-[1.02] ${glowMap[color]}`}
-    >
-      <h3 className="font-semibold text-gray-800 mb-2">{title}</h3>
-      <p className="text-sm text-gray-600">{desc}</p>
     </div>
   );
 }
