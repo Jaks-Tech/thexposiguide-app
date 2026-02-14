@@ -111,10 +111,6 @@ export default function SecondaryNavBar() {
           
           {/* Brand for Mobile */}
           <div className="lg:hidden flex items-center gap-2 text-white font-black tracking-tight">
-            <div className="p-1.5 bg-white/20 rounded-lg">
-              <FaFlask size={18} />
-            </div>
-            <span>XPosi Guide</span>
           </div>
 
           {/* Hamburger Button */}
@@ -175,10 +171,10 @@ function NavContent({ setIsMenuOpen }: { setIsMenuOpen: (o: boolean) => void }) 
             <GiPelvisBone size={20} className="text-orange-600" /> 
             <span className="font-medium">Pelvic Girdle</span>
           </Link>
-          <div className="border-t border-gray-100 my-1" />
+          
           <Link href="/revision-workspace" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50 transition-colors">
-            <MdMenuBook size={20} className="text-blue-600" /> 
-            <span className="font-semibold text-blue-700">Revision Workspace</span>
+            <MdMenuBook size={20} className="text-orange-600" /> 
+            <span className="font-medium">Revision Workspace</span>
           </Link>
         </div>
       </Dropdown>
