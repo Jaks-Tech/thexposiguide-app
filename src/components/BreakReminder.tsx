@@ -30,11 +30,11 @@ export default function BreakReminder({
 
   return (
     <>
-      {/* Small Inline Button */}
-      <div className="flex justify-end mb-4">
+{/* Floating Button - Adjusted for visibility */}
+      <div className="fixed top-24 right-6 z-[100] pointer-events-auto">
         <Link
           href="/games"
-          className="text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-md bg-blue-700 hover:bg-blue-600 text-white transition"
+          className="text-xs sm:text-sm font-semibold px-4 py-2 rounded-full bg-blue-700 hover:bg-blue-600 text-white transition shadow-[0_4px_14px_0_rgba(0,118,255,0.39)] border border-blue-400/20"
         >
           🎮 Study Break → Games
         </Link>
@@ -42,7 +42,7 @@ export default function BreakReminder({
 
       {/* 30-Minute Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md px-4">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-md px-4">
           <div className="w-full max-w-md rounded-2xl bg-gradient-to-br from-blue-800 to-gray-900 border border-white/10 shadow-2xl p-8 text-white text-center">
             
             <h2 className="text-xl font-bold mb-4">
