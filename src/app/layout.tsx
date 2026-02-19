@@ -9,6 +9,7 @@ import Script from "next/script";
 import SecondaryNavBar from "@/components/SecondaryNavBar";
 import HydratedError from "@/components/HydratedError";
 import AnalyticsHeartbeat from "@/components/AnalyticsHeartbeat";
+import BreakReminder from "@/components/BreakReminder"; // ✅ Added
 
 export const metadata: Metadata = {
   title: "The XPosiGuide",
@@ -54,6 +55,11 @@ export default function RootLayout({
 
         {/* MAIN CONTENT */}
         <main className="flex-grow w-full relative z-10">
+          {/* 🎮 Global Break Button */}
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+            <BreakReminder durationMinutes={30} />
+          </div>
+
           {children}
         </main>
 

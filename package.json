@@ -10,12 +10,15 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@radix-ui/react-slot": "^1.2.4",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.81.0",
     "@upstash/redis": "^1.36.1",
     "axios": "^1.13.2",
     "canvas": "^3.2.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
     "emoji-picker-react": "^4.15.2",
     "formidable": "^3.5.4",
@@ -41,6 +44,7 @@
     "remark": "^15.0.1",
     "remark-gfm": "^4.0.1",
     "remark-html": "^16.0.1",
+    "tailwind-merge": "^3.5.0",
     "tesseract.js": "^6.0.1"
   },
   "devDependencies": {

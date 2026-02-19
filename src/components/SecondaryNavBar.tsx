@@ -6,7 +6,7 @@ import { useState, useRef } from "react";
 import { FiChevronDown, FiMenu, FiX } from "react-icons/fi";
 import { FaFlask } from "react-icons/fa";
 import { GiHand, GiLeg, GiPelvisBone } from "react-icons/gi";
-import { MdMenuBook, MdHome } from "react-icons/md";
+import { MdMenuBook, MdHome, MdSportsEsports } from "react-icons/md";
 import { PiRobotBold } from "react-icons/pi";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -157,6 +157,7 @@ function NavContent({ setIsMenuOpen }: { setIsMenuOpen: (o: boolean) => void }) 
         Home
       </NavItem>
 
+
       <Dropdown label="Explore Projections" icon={<GiPelvisBone size={18} />}>
         <div className="flex flex-col">
           <Link href="/upper-extremities" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50 transition-colors">
@@ -174,7 +175,7 @@ function NavContent({ setIsMenuOpen }: { setIsMenuOpen: (o: boolean) => void }) 
           
           <Link href="/revision-workspace" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50 transition-colors">
             <MdMenuBook size={20} className="text-orange-600" /> 
-            <span className="font-medium">Your-Generated-Projections</span>
+            <span className="font-medium">Generated-Projections</span>
           </Link>
         </div>
       </Dropdown>
@@ -199,6 +200,10 @@ function NavContent({ setIsMenuOpen }: { setIsMenuOpen: (o: boolean) => void }) 
           </Link>
         </div>
       </Dropdown>
+
+      <NavItem href="/games" icon={<MdSportsEsports size={18} />} onClick={close}>
+        Game Retreat
+      </NavItem>
     </>
   );
 }
