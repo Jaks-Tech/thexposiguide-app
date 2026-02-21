@@ -23,31 +23,23 @@ type ControlMode = 'joystick' | 'arrows';
 const GamesPage: React.FC = () => {
   const [selectedGame, setSelectedGame] = useState<GameType | null>(null);
   const [showTimer] = useState<boolean>(true);
-
-  // Controls visible across all devices
   const [controlMode, setControlMode] = useState<ControlMode>('joystick');
-
   const gameAreaRef = useRef<HTMLDivElement | null>(null);
 
-  const handleTimerEnd = () => {
-    console.log('Break time is over!');
-  };
+  const handleTimerEnd = () => console.log('Break time is over!');
 
-  // Smooth scroll when game opens
   useEffect(() => {
     if (selectedGame) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [selectedGame]);
 
-  // Default to joystick for arcade games
   useEffect(() => {
     if (selectedGame === 'snake' || selectedGame === 'tetris') {
       setControlMode('joystick');
     }
   }, [selectedGame]);
 
-  // Dispatch keyboard events (keeps your existing game logic untouched)
   const dispatchKey = useCallback((key: string) => {
     (document.activeElement as HTMLElement | null)?.blur?.();
     window.dispatchEvent(new KeyboardEvent('keydown', { key }));
@@ -55,16 +47,11 @@ const GamesPage: React.FC = () => {
 
   const renderGame = () => {
     switch (selectedGame) {
-      case 'snake':
-        return <SnakeGame />;
-      case 'tetris':
-        return <TetrisGame />;
-      case 'spider':
-        return <SpiderSolitaire />;
-      case 'memory':
-        return <MemoryGame />;
-      default:
-        return null;
+      case 'snake': return <SnakeGame />;
+      case 'tetris': return <TetrisGame />;
+      case 'spider': return <SpiderSolitaire />;
+      case 'memory': return <MemoryGame />;
+      default: return null;
     }
   };
 
@@ -72,162 +59,80 @@ const GamesPage: React.FC = () => {
 
   return (
     <GameLayout>
-      <div className="flex flex-col w-full bg-gradient-to-br from-[#0f172a] via-[#111827] to-[#1e293b] text-white relative">
-        {/* Glow Background */}
+      <div className="flex flex-col w-full bg-gradient-to-br from-[#0f172a] via-[#111827] to-[#1e293b] text-white relative min-h-full">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(99,102,241,0.25),transparent_40%),radial-gradient(circle_at_70%_60%,rgba(168,85,247,0.25),transparent_40%)] pointer-events-none" />
 
-        {/* Header */}
-        <header className="relative z-10 w-full px-4 sm:px-6 py-5 sm:py-6">
-          <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+        <header className="relative z-10 w-full px-4 py-4 sm:py-6">
+          <div className="max-w-6xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
                 <Gamepad2 className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl font-semibold">The XPosiGuide</h1>
-                <p className="text-xs text-slate-400">Focus Reset Zone</p>
+                <h1 className="text-base sm:text-xl font-semibold">The XPosiGuide</h1>
+                <p className="text-[10px] sm:text-xs text-slate-400">Focus Reset Zone</p>
               </div>
             </div>
-
             <Link href="/projections-studio">
-              <Button
-                variant="outline"
-                className="rounded-2xl border-slate-600 text-slate-300 hover:bg-slate-800"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
+              <Button variant="outline" className="rounded-2xl border-slate-600 h-9 text-xs sm:text-sm">
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back
               </Button>
             </Link>
           </div>
         </header>
 
-        {/* Main */}
-        <main className="relative z-10 flex-1 max-w-6xl mx-auto px-4 sm:px-6 pb-20 w-full">
-          {/* Hero */}
+        <main className="relative z-10 flex-1 max-w-6xl mx-auto px-4 pb-10 w-full">
           {!selectedGame && (
-            <div className="text-center mt-10 mb-16">
-              <motion.h2
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4"
-              >
-                Recharge Your Brain
-              </motion.h2>
-              <p className="text-slate-400 max-w-2xl mx-auto">
-                Take a structured mental reset. Play a quick game and return sharper.
-              </p>
-            </div>
-          )}
-
-          {/* Timer */}
-          {showTimer && !selectedGame && (
-            <div className="max-w-xl mx-auto mb-16">
-              <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 shadow-2xl">
-                <BreakTimer onTimerEnd={handleTimerEnd} />
+            <>
+              <div className="text-center mt-6 mb-10">
+                <motion.h2 initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-2xl sm:text-4xl font-bold mb-2">
+                  Recharge Your Brain
+                </motion.h2>
+                <p className="text-slate-400 text-sm max-w-md mx-auto">Short breaks improve retention.</p>
               </div>
-            </div>
-          )}
-
-          {/* Game Selector */}
-          {!selectedGame && (
-            <div className="mb-16">
+              {showTimer && (
+                <div className="max-w-md mx-auto mb-10">
+                  <BreakTimer onTimerEnd={handleTimerEnd} />
+                </div>
+              )}
               <GameSelector selectedGame={selectedGame} onSelectGame={setSelectedGame} />
-            </div>
+            </>
           )}
 
-          {/* Active Game */}
           {selectedGame && (
-            <div className="mt-8">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl sm:text-2xl font-semibold capitalize">
-                  {selectedGame === 'spider' ? 'Spider Solitaire' : selectedGame}
-                </h3>
-                <Button
-                  variant="ghost"
-                  onClick={() => setSelectedGame(null)}
-                  className="text-slate-300 hover:text-white"
-                >
-                  Close
-                </Button>
+            <div className="flex flex-col h-full">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold capitalize">{selectedGame}</h3>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedGame(null)}>Close</Button>
               </div>
 
-              {/* Game Area */}
-              <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-6 shadow-xl overflow-hidden">
-                <div ref={gameAreaRef} className="w-full flex justify-center">
-                  <div className="origin-top scale-[0.78] min-[420px]:scale-[0.85] sm:scale-[0.92] md:scale-100">
+              {/* Responsive Container */}
+              <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-2 sm:p-6 flex flex-col items-center">
+                <div ref={gameAreaRef} className="w-full flex justify-center overflow-hidden">
+                  {/* AGGRESSIVE SCALING FOR MOBILE */}
+                  <div className="origin-top scale-[0.65] min-[380px]:scale-[0.75] min-[440px]:scale-[0.85] sm:scale-100 transition-transform duration-300">
                     {renderGame()}
                   </div>
                 </div>
 
-                {/* ✅ Controls across ALL devices (snake/tetris only) */}
                 {isArcadeGame && (
-                  <div className="mt-6">
-                    {/* Toggle */}
+                  /* NEGATIVE MARGIN on mobile to pull controls up into the space created by scaling */
+                  <div className="w-full -mt-20 sm:mt-6 transition-all">
                     <div className="flex items-center justify-center mb-4">
-                      <div className="inline-flex rounded-2xl border border-white/10 bg-black/20 backdrop-blur-xl p-1">
-                        <button
-                          type="button"
-                          onClick={() => setControlMode('joystick')}
-                          className={`px-4 py-2 text-xs rounded-xl transition ${
-                            controlMode === 'joystick'
-                              ? 'bg-indigo-500/30 text-white'
-                              : 'text-slate-300 hover:text-white'
-                          }`}
-                        >
-                          Joystick
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setControlMode('arrows')}
-                          className={`px-4 py-2 text-xs rounded-xl transition ${
-                            controlMode === 'arrows'
-                              ? 'bg-indigo-500/30 text-white'
-                              : 'text-slate-300 hover:text-white'
-                          }`}
-                        >
-                          Arrows
-                        </button>
+                      <div className="inline-flex rounded-xl bg-black/40 p-1">
+                        <button onClick={() => setControlMode('joystick')} className={`px-3 py-1 text-xs rounded-lg ${controlMode === 'joystick' ? 'bg-indigo-500 text-white' : 'text-slate-400'}`}>Joystick</button>
+                        <button onClick={() => setControlMode('arrows')} className={`px-3 py-1 text-xs rounded-lg ${controlMode === 'arrows' ? 'bg-indigo-500 text-white' : 'text-slate-400'}`}>Arrows</button>
                       </div>
                     </div>
 
-                    {/* Controls */}
                     {controlMode === 'joystick' ? (
-                      <MobileGamepadDock
-                        mode={selectedGame as 'snake' | 'tetris'}
-                        onKey={dispatchKey}
-                        swipeTargetRef={gameAreaRef}
-                      />
+                      <MobileGamepadDock mode={selectedGame as 'snake' | 'tetris'} onKey={dispatchKey} swipeTargetRef={gameAreaRef} />
                     ) : (
-                      <div className="mt-2">
-                        <MobileControls onKeyPress={dispatchKey} />
-                        <p className="mt-3 text-center text-[11px] text-slate-400">
-                          Tap the arrows to move. Keyboard arrows still work too.
-                        </p>
-                      </div>
+                      <MobileControls onKeyPress={dispatchKey} />
                     )}
                   </div>
                 )}
               </div>
-
-              {!isArcadeGame && (
-                <p className="mt-4 text-center text-xs text-slate-400">
-                  Rotate your phone for a bigger play area.
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Smart Studying */}
-          {!selectedGame && (
-            <div className="text-center mt-20">
-              <div className="inline-flex items-center gap-2 text-indigo-400 mb-4">
-                <Sparkles className="w-5 h-5" />
-                <span className="uppercase tracking-wider text-sm">Smart Studying</span>
-              </div>
-              <p className="text-slate-400 max-w-xl mx-auto">
-                Short, structured breaks improve retention and reduce burnout.
-              </p>
             </div>
           )}
         </main>
