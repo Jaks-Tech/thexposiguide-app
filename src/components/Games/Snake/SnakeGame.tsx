@@ -13,9 +13,12 @@ const GRID_SIZE = 20;
 const CELL_SIZE = 20;
 const CANVAS_WIDTH = GRID_SIZE * CELL_SIZE;
 const CANVAS_HEIGHT = GRID_SIZE * CELL_SIZE;
-const INITIAL_SPEED = 500; // Increased from 150 to 200 (slower start)
-const MIN_SPEED = 80; // Minimum interval (fastest speed)
-const SPEED_INCREMENT = 5; // Reduced from 2 to 5 (slower speed increase per 10 points)
+
+// --- SPEED SETTINGS ---
+const INITIAL_SPEED = 400; // Starting interval (ms). Higher is slower.
+const MIN_SPEED = 60;     // Fastest the game can go.
+const SPEED_INCREMENT = 1; // How many ms to subtract per fruit eaten. 
+                           // (Since score adds 10, total reduction per fruit = 20ms)
 
 const SnakeGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -68,6 +71,7 @@ const SnakeGame: React.FC = () => {
         const newDirection = keyMap[e.key];
         const currentDir = directionRef.current;
         
+        // Prevent 180-degree turns
         if (newDirection.x !== -currentDir.x || newDirection.y !== -currentDir.y) {
           setDirection(newDirection);
           directionRef.current = newDirection;
@@ -86,15 +90,16 @@ const SnakeGame: React.FC = () => {
 
   useEffect(() => {
     if (gameOver || isPaused) {
-      if (gameLoopRef.current) {
-        clearInterval(gameLoopRef.current);
-      }
+      if (gameLoopRef.current) clearInterval(gameLoopRef.current);
       return;
     }
 
-    // Calculate speed: decreases by SPEED_INCREMENT for every 10 points, capped at MIN_SPEED
-    const speedReduction = Math.min(Math.floor(score / 10) * SPEED_INCREMENT, INITIAL_SPEED - MIN_SPEED);
-    const currentSpeed = INITIAL_SPEED - speedReduction;
+    /** * GRADUAL SPEED LOGIC:
+     * We subtract SPEED_INCREMENT for every fruit point.
+     * Capped so it never goes faster than MIN_SPEED.
+     */
+    const speedReduction = score * SPEED_INCREMENT;
+    const currentSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - speedReduction);
 
     gameLoopRef.current = setInterval(() => {
       setSnake(currentSnake => {
@@ -105,12 +110,14 @@ const SnakeGame: React.FC = () => {
         head.x += currentDir.x;
         head.y += currentDir.y;
 
+        // Wall collision
         if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
           setGameOver(true);
           setHighScore(prev => Math.max(prev, score));
           return currentSnake;
         }
 
+        // Self collision
         if (newSnake.some(segment => segment.x === head.x && segment.y === head.y)) {
           setGameOver(true);
           setHighScore(prev => Math.max(prev, score));
@@ -119,9 +126,12 @@ const SnakeGame: React.FC = () => {
 
         newSnake.unshift(head);
 
+        // Eating food
         if (head.x === food.x && head.y === food.y) {
           setScore(prev => prev + 10);
           setFood(generateFood(newSnake));
+          // Note: When score updates, this useEffect will trigger again, 
+          // restarting the interval with the new faster speed.
         } else {
           newSnake.pop();
         }
@@ -131,22 +141,20 @@ const SnakeGame: React.FC = () => {
     }, currentSpeed);
 
     return () => {
-      if (gameLoopRef.current) {
-        clearInterval(gameLoopRef.current);
-      }
+      if (gameLoopRef.current) clearInterval(gameLoopRef.current);
     };
   }, [gameOver, isPaused, food, score, generateFood]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     ctx.fillStyle = '#0f172a';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
+    // Draw Grid
     ctx.strokeStyle = '#1e293b';
     ctx.lineWidth = 1;
     for (let i = 0; i <= GRID_SIZE; i++) {
@@ -160,6 +168,7 @@ const SnakeGame: React.FC = () => {
       ctx.stroke();
     }
 
+    // Draw Food
     ctx.fillStyle = '#ef4444';
     ctx.shadowColor = '#ef4444';
     ctx.shadowBlur = 10;
@@ -174,6 +183,7 @@ const SnakeGame: React.FC = () => {
     ctx.fill();
     ctx.shadowBlur = 0;
 
+    // Draw Snake
     snake.forEach((segment, index) => {
       const isHead = index === 0;
       ctx.fillStyle = isHead ? '#22c55e' : '#16a34a';
