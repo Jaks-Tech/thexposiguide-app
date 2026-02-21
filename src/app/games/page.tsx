@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { GameType } from '@/types/games';
 import Link from 'next/link';
 import {
@@ -14,6 +14,7 @@ import {
 } from '@/components/Games';
 import { Gamepad2, ArrowLeft, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import MobileControls from '@/components/Games/MobileControls';
 import { motion } from 'framer-motion';
 
 const GamesPage: React.FC = () => {
@@ -24,15 +25,23 @@ const GamesPage: React.FC = () => {
     console.log('Break time is over!');
   };
 
-  // 🔥 Prevent jump-to-footer issue
+  // ✅ Prevent jump-to-footer + bring game into view on mobile
   useEffect(() => {
     if (selectedGame) {
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth',
-      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [selectedGame]);
+
+  // ✅ Only show mobile controls for games that use arrow keys
+  const showMobileControls = selectedGame === 'snake' || selectedGame === 'tetris';
+
+  // ✅ Dispatch keyboard events so existing game logic works without changes
+  const dispatchKey = useCallback((key: string) => {
+    // Ensure the game receives the event even if a button is focused
+    (document.activeElement as HTMLElement | null)?.blur?.();
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key }));
+  }, []);
 
   const renderGame = () => {
     switch (selectedGame) {
@@ -52,38 +61,37 @@ const GamesPage: React.FC = () => {
   return (
     <GameLayout>
       <div className="flex flex-col w-full bg-gradient-to-br from-[#0f172a] via-[#111827] to-[#1e293b] text-white relative">
-
         {/* Glow Background */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(99,102,241,0.25),transparent_40%),radial-gradient(circle_at_70%_60%,rgba(168,85,247,0.25),transparent_40%)] pointer-events-none" />
 
         {/* Page Header */}
-        <header className="relative z-10 w-full px-6 py-6">
-          <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+        <header className="relative z-10 w-full px-4 sm:px-6 py-5 sm:py-6">
+          <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 shrink-0 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
                 <Gamepad2 className="w-5 h-5 text-white" />
               </div>
-              <div>
-                <h1 className="text-xl font-semibold">The XPosiGuide</h1>
-                <p className="text-xs text-slate-400">Focus Reset Zone</p>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-xl font-semibold truncate">The XPosiGuide</h1>
+                <p className="text-xs text-slate-400 truncate">Focus Reset Zone</p>
               </div>
             </div>
 
-            <Link href="/projections-studio">
+            <Link href="/projections-studio" className="shrink-0">
               <Button
                 variant="outline"
                 className="rounded-2xl border-slate-600 text-slate-300 hover:bg-slate-800"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Study
+                <span className="hidden sm:inline">Back to Study</span>
+                <span className="sm:hidden">Back</span>
               </Button>
             </Link>
           </div>
         </header>
 
         {/* Main Content */}
-        <main className="relative z-10 flex-1 max-w-6xl mx-auto px-6 pb-20">
-
+        <main className="relative z-10 flex-1 max-w-6xl mx-auto px-4 sm:px-6 pb-20 w-full">
           {/* Hero Section */}
           {!selectedGame && (
             <div className="text-center mt-10 mb-16">
@@ -91,11 +99,11 @@ const GamesPage: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
-                className="text-4xl md:text-5xl font-bold mb-4"
+                className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4"
               >
                 Recharge Your Brain
               </motion.h2>
-              <p className="text-slate-400 max-w-2xl mx-auto">
+              <p className="text-slate-400 max-w-2xl mx-auto text-sm sm:text-base">
                 Step away and recharge your mind with a fun, timed break.
                 Play a quick game, refresh your focus, and return sharper than ever.
               </p>
@@ -105,7 +113,7 @@ const GamesPage: React.FC = () => {
           {/* Timer */}
           {showTimer && !selectedGame && (
             <div className="max-w-xl mx-auto mb-16">
-              <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 shadow-2xl">
+              <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-5 sm:p-6 shadow-2xl">
                 <BreakTimer onTimerEnd={handleTimerEnd} />
               </div>
             </div>
@@ -114,34 +122,53 @@ const GamesPage: React.FC = () => {
           {/* Game Selector */}
           {!selectedGame && (
             <div className="mb-16">
-              <GameSelector
-                selectedGame={selectedGame}
-                onSelectGame={setSelectedGame}
-              />
+              <GameSelector selectedGame={selectedGame} onSelectGame={setSelectedGame} />
             </div>
           )}
 
           {/* Active Game */}
           {selectedGame && (
             <div className="mt-8">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-semibold capitalize">
-                  {selectedGame === 'spider'
-                    ? 'Spider Solitaire'
-                    : selectedGame}
+              <div className="flex items-center justify-between mb-6 gap-3">
+                <h3 className="text-xl sm:text-2xl font-semibold capitalize">
+                  {selectedGame === 'spider' ? 'Spider Solitaire' : selectedGame}
                 </h3>
                 <Button
                   variant="ghost"
                   onClick={() => setSelectedGame(null)}
-                  className="text-slate-400 hover:text-white"
+                  className="text-slate-300 hover:text-white"
                 >
-                  Close Game
+                  Close
                 </Button>
               </div>
 
-              <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl">
-                {renderGame()}
+              {/* ✅ Responsive game container (centers + scales on small screens) */}
+              <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-3 sm:p-6 shadow-xl overflow-hidden">
+                <div className="w-full flex justify-center">
+                  {/* NOTE: If you don't have `xs:` configured in Tailwind,
+                      replace `xs:scale-[0.85]` with `min-[420px]:scale-[0.85]` */}
+                  <div className="origin-top scale-[0.78] xs:scale-[0.85] sm:scale-[0.92] md:scale-100">
+                    {renderGame()}
+                  </div>
+                </div>
+
+                {/* ✅ Mobile Controls (only for arrow-key games) */}
+                {showMobileControls && (
+                  <div className="mt-5">
+                    <MobileControls onKeyPress={dispatchKey} />
+                    <p className="mt-3 text-center text-[11px] text-slate-400 md:hidden">
+                      Use the buttons to control the game. Rotate your phone for a bigger play area.
+                    </p>
+                  </div>
+                )}
               </div>
+
+              {/* Optional hint on very small screens (for non-arrow games too) */}
+              {!showMobileControls && (
+                <p className="mt-4 text-center text-xs text-slate-400">
+                  Tip: Rotate your phone for a bigger play area.
+                </p>
+              )}
             </div>
           )}
 
@@ -150,17 +177,14 @@ const GamesPage: React.FC = () => {
             <div className="text-center mt-20">
               <div className="inline-flex items-center gap-2 text-indigo-400 mb-4">
                 <Sparkles className="w-5 h-5" />
-                <span className="uppercase tracking-wider text-sm">
-                  Smart Studying
-                </span>
+                <span className="uppercase tracking-wider text-sm">Smart Studying</span>
               </div>
-              <p className="text-slate-400 max-w-xl mx-auto">
+              <p className="text-slate-400 max-w-xl mx-auto text-sm sm:text-base">
                 Short, structured breaks improve long-term retention and reduce burnout.
                 Use this space intentionally and level up your focus.
               </p>
             </div>
           )}
-
         </main>
       </div>
     </GameLayout>
