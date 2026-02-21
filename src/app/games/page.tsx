@@ -15,11 +15,17 @@ import {
 import { Gamepad2, ArrowLeft, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import MobileGamepadDock from '@/components/Games/MobileGamepadDock';
+import MobileControls from '@/components/Games/MobileControls';
 import { motion } from 'framer-motion';
+
+type ControlMode = 'joystick' | 'arrows';
 
 const GamesPage: React.FC = () => {
   const [selectedGame, setSelectedGame] = useState<GameType | null>(null);
   const [showTimer] = useState<boolean>(true);
+
+  // Controls visible across all devices
+  const [controlMode, setControlMode] = useState<ControlMode>('joystick');
 
   const gameAreaRef = useRef<HTMLDivElement | null>(null);
 
@@ -31,6 +37,13 @@ const GamesPage: React.FC = () => {
   useEffect(() => {
     if (selectedGame) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [selectedGame]);
+
+  // Default to joystick for arcade games
+  useEffect(() => {
+    if (selectedGame === 'snake' || selectedGame === 'tetris') {
+      setControlMode('joystick');
     }
   }, [selectedGame]);
 
@@ -55,8 +68,7 @@ const GamesPage: React.FC = () => {
     }
   };
 
-  const isArcadeGame =
-    selectedGame === 'snake' || selectedGame === 'tetris';
+  const isArcadeGame = selectedGame === 'snake' || selectedGame === 'tetris';
 
   return (
     <GameLayout>
@@ -72,12 +84,8 @@ const GamesPage: React.FC = () => {
                 <Gamepad2 className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl font-semibold">
-                  The XPosiGuide
-                </h1>
-                <p className="text-xs text-slate-400">
-                  Focus Reset Zone
-                </p>
+                <h1 className="text-lg sm:text-xl font-semibold">The XPosiGuide</h1>
+                <p className="text-xs text-slate-400">Focus Reset Zone</p>
               </div>
             </div>
 
@@ -124,10 +132,7 @@ const GamesPage: React.FC = () => {
           {/* Game Selector */}
           {!selectedGame && (
             <div className="mb-16">
-              <GameSelector
-                selectedGame={selectedGame}
-                onSelectGame={setSelectedGame}
-              />
+              <GameSelector selectedGame={selectedGame} onSelectGame={setSelectedGame} />
             </div>
           )}
 
@@ -136,9 +141,7 @@ const GamesPage: React.FC = () => {
             <div className="mt-8">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl sm:text-2xl font-semibold capitalize">
-                  {selectedGame === 'spider'
-                    ? 'Spider Solitaire'
-                    : selectedGame}
+                  {selectedGame === 'spider' ? 'Spider Solitaire' : selectedGame}
                 </h3>
                 <Button
                   variant="ghost"
@@ -151,22 +154,59 @@ const GamesPage: React.FC = () => {
 
               {/* Game Area */}
               <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-6 shadow-xl overflow-hidden">
-                <div
-                  ref={gameAreaRef}
-                  className="w-full flex justify-center"
-                >
+                <div ref={gameAreaRef} className="w-full flex justify-center">
                   <div className="origin-top scale-[0.78] min-[420px]:scale-[0.85] sm:scale-[0.92] md:scale-100">
                     {renderGame()}
                   </div>
                 </div>
 
-                {/* 🚀 Arcade Dock */}
+                {/* ✅ Controls across ALL devices (snake/tetris only) */}
                 {isArcadeGame && (
-                  <MobileGamepadDock
-                    mode={selectedGame as 'snake' | 'tetris'}
-                    onKey={dispatchKey}
-                    swipeTargetRef={gameAreaRef}
-                  />
+                  <div className="mt-6">
+                    {/* Toggle */}
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="inline-flex rounded-2xl border border-white/10 bg-black/20 backdrop-blur-xl p-1">
+                        <button
+                          type="button"
+                          onClick={() => setControlMode('joystick')}
+                          className={`px-4 py-2 text-xs rounded-xl transition ${
+                            controlMode === 'joystick'
+                              ? 'bg-indigo-500/30 text-white'
+                              : 'text-slate-300 hover:text-white'
+                          }`}
+                        >
+                          Joystick
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setControlMode('arrows')}
+                          className={`px-4 py-2 text-xs rounded-xl transition ${
+                            controlMode === 'arrows'
+                              ? 'bg-indigo-500/30 text-white'
+                              : 'text-slate-300 hover:text-white'
+                          }`}
+                        >
+                          Arrows
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Controls */}
+                    {controlMode === 'joystick' ? (
+                      <MobileGamepadDock
+                        mode={selectedGame as 'snake' | 'tetris'}
+                        onKey={dispatchKey}
+                        swipeTargetRef={gameAreaRef}
+                      />
+                    ) : (
+                      <div className="mt-2">
+                        <MobileControls onKeyPress={dispatchKey} />
+                        <p className="mt-3 text-center text-[11px] text-slate-400">
+                          Tap the arrows to move. Keyboard arrows still work too.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -183,9 +223,7 @@ const GamesPage: React.FC = () => {
             <div className="text-center mt-20">
               <div className="inline-flex items-center gap-2 text-indigo-400 mb-4">
                 <Sparkles className="w-5 h-5" />
-                <span className="uppercase tracking-wider text-sm">
-                  Smart Studying
-                </span>
+                <span className="uppercase tracking-wider text-sm">Smart Studying</span>
               </div>
               <p className="text-slate-400 max-w-xl mx-auto">
                 Short, structured breaks improve retention and reduce burnout.
