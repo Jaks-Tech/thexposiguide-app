@@ -61,7 +61,7 @@ export default function Footer() {
         {/* BOTTOM STRIP */}
         <div className="mt-20 pt-10 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-6 text-xs">
           <p className="text-gray-500">
-            © {currentYear} <span className="text-gray-300 font-medium">The XPosiGuide</span>. Built for Radiography Students.
+            © {currentYear} <span className="text-gray-300 font-medium">The XPosiGuide</span>. Built for Radiography Students and Practitioners.
           </p>
           <div className="flex gap-8 uppercase tracking-wide font-medium text-gray-500">
             <a href="/" className="hover:text-white transition-colors">Privacy</a>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { GameType } from '@/types/games';
 import Link from 'next/link';
 import {
@@ -18,11 +18,21 @@ import { motion } from 'framer-motion';
 
 const GamesPage: React.FC = () => {
   const [selectedGame, setSelectedGame] = useState<GameType | null>(null);
-  const [showTimer, setShowTimer] = useState<boolean>(true);
+  const [showTimer] = useState<boolean>(true);
 
   const handleTimerEnd = () => {
     console.log('Break time is over!');
   };
+
+  // 🔥 Prevent jump-to-footer issue
+  useEffect(() => {
+    if (selectedGame) {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      });
+    }
+  }, [selectedGame]);
 
   const renderGame = () => {
     switch (selectedGame) {
@@ -41,11 +51,12 @@ const GamesPage: React.FC = () => {
 
   return (
     <GameLayout>
-      <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#111827] to-[#1e293b] text-white relative overflow-hidden">
-        {/* Glow Background Effect */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(99,102,241,0.25),transparent_40%),radial-gradient(circle_at_70%_60%,rgba(168,85,247,0.25),transparent_40%)]" />
+      <div className="flex flex-col w-full bg-gradient-to-br from-[#0f172a] via-[#111827] to-[#1e293b] text-white relative">
 
-        {/* Header */}
+        {/* Glow Background */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(99,102,241,0.25),transparent_40%),radial-gradient(circle_at_70%_60%,rgba(168,85,247,0.25),transparent_40%)] pointer-events-none" />
+
+        {/* Page Header */}
         <header className="relative z-10 w-full px-6 py-6">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -70,8 +81,10 @@ const GamesPage: React.FC = () => {
           </div>
         </header>
 
-        {/* Main */}
-        <main className="relative z-10 max-w-6xl mx-auto px-6 pb-16">
+        {/* Main Content */}
+        <main className="relative z-10 flex-1 max-w-6xl mx-auto px-6 pb-20">
+
+          {/* Hero Section */}
           {!selectedGame && (
             <div className="text-center mt-10 mb-16">
               <motion.h2
@@ -147,6 +160,7 @@ const GamesPage: React.FC = () => {
               </p>
             </div>
           )}
+
         </main>
       </div>
     </GameLayout>
