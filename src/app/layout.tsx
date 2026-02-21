@@ -9,7 +9,7 @@ import Script from "next/script";
 import SecondaryNavBar from "@/components/SecondaryNavBar";
 import HydratedError from "@/components/HydratedError";
 import AnalyticsHeartbeat from "@/components/AnalyticsHeartbeat";
-import BreakReminder from "@/components/BreakReminder"; // ✅ Added
+import BreakReminder from "@/components/BreakReminder";
 
 export const metadata: Metadata = {
   title: "The XPosiGuide",
@@ -23,12 +23,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="h-full">
       <body
         suppressHydrationWarning
-        className="relative min-h-screen flex flex-col text-neutral-900"
+        className="relative min-h-screen flex flex-col text-neutral-900 m-0 p-0"
       >
-        {/* 🌫 GLOBAL BACKGROUND IMAGE */}
+        {/* GLOBAL BACKGROUND IMAGE */}
         <div className="fixed inset-0 -z-20">
           <img
             src="/bg.png"
@@ -37,38 +37,31 @@ export default function RootLayout({
           />
         </div>
 
-        {/* 🤍 SOFT WHITE OVERLAY FOR READABILITY */}
+        {/* SOFT WHITE OVERLAY */}
         <div className="fixed inset-0 -z-10 bg-white/80 backdrop-blur-[2px]" />
 
-        {/* ❤️ REALTIME USER HEARTBEAT */}
         <AnalyticsHeartbeat />
 
-        {/* HEADER */}
         <HydratedError>
           <Header />
         </HydratedError>
 
-        {/* SECONDARY NAVBAR */}
         <HydratedError>
           <SecondaryNavBar />
         </HydratedError>
 
-        {/* MAIN CONTENT */}
-        <main className="flex-grow w-full relative z-10">
-          {/* 🎮 Global Break Button */}
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-            <BreakReminder durationMinutes={30} />
-          </div>
-
+        {/* MAIN CONTENT: 
+            Removed the pt-4 div from here because it creates a white gap 
+            above the dark GameLayout. 
+        */}
+        <main className="flex-1 w-full relative z-10 flex flex-col">
           {children}
         </main>
 
-        {/* FOOTER */}
         <HydratedError>
           <Footer />
         </HydratedError>
 
-        {/* ✅ SMART SCROLL RESTORATION */}
         <Script id="scroll-restore-handler" strategy="afterInteractive">
           {`
             if ('scrollRestoration' in history) {
@@ -82,7 +75,6 @@ export default function RootLayout({
           `}
         </Script>
 
-        {/* 📩 MAILERLITE SCRIPT */}
         <Script id="mailerlite-universal" strategy="afterInteractive">
           {`
             (function(w,d,e,u,f,l,n){

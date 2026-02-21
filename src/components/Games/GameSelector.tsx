@@ -2,7 +2,8 @@
 
 import React from 'react';
 import type { GameType, GameOption } from '@/types/games';
-import { Gamepad2 as SnakeIcon, Box, Bug as SpiderIcon, Brain } from 'lucide-react';
+import { Gamepad2 as SnakeIcon, Box, Bug as SpiderIcon, Brain, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface GameSelectorProps {
   selectedGame: GameType | null;
@@ -12,44 +13,46 @@ interface GameSelectorProps {
 const games: GameOption[] = [
   {
     id: 'snake',
-    name: 'Snake',
-    description: 'Classic grid-based snake game',
+    name: 'Snake Reloaded',
+    description: 'Reflex & spatial awareness boost',
     icon: 'snake',
-    color: '#22c55e'
+    color: '#22c55e',
   },
   {
     id: 'tetris',
-    name: 'Tetris',
-    description: 'Stack falling blocks strategically',
+    name: 'Neuro Tetris',
+    description: 'Strategic stacking challenge',
     icon: 'tetris',
-    color: '#3b82f6'
+    color: '#3b82f6',
   },
   {
     id: 'spider',
     name: 'Spider Solitaire',
-    description: 'Classic card stacking game',
+    description: 'Classic card mastery',
     icon: 'spider',
-    color: '#a855f7'
+    color: '#a855f7',
   },
   {
     id: 'memory',
-    name: 'Memory Match',
-    description: 'Flip cards and find pairs',
+    name: 'Memory Matrix',
+    description: 'Pattern recognition training',
     icon: 'memory',
-    color: '#f59e0b'
-  }
+    color: '#f59e0b',
+  },
 ];
 
-const GameIcon: React.FC<{ type: string; color: string; className?: string }> = ({ type, color, className = 'w-6 h-6' }) => {
+const GameIcon: React.FC<{ type: string; color: string }> = ({ type, color }) => {
+  const baseClass = 'w-7 h-7';
+
   switch (type) {
     case 'snake':
-      return <SnakeIcon className={className} style={{ color }} />;
+      return <SnakeIcon className={baseClass} style={{ color }} />;
     case 'tetris':
-      return <Box className={className} style={{ color }} />;
+      return <Box className={baseClass} style={{ color }} />;
     case 'spider':
-      return <SpiderIcon className={className} style={{ color }} />;
+      return <SpiderIcon className={baseClass} style={{ color }} />;
     case 'memory':
-      return <Brain className={className} style={{ color }} />;
+      return <Brain className={baseClass} style={{ color }} />;
     default:
       return null;
   }
@@ -58,48 +61,83 @@ const GameIcon: React.FC<{ type: string; color: string; className?: string }> = 
 const GameSelector: React.FC<GameSelectorProps> = ({ selectedGame, onSelectGame }) => {
   return (
     <div className="w-full">
-      <h2 className="text-xl font-semibold text-white mb-4 text-center">Choose Your Game</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="text-center mb-10">
+        <div className="inline-flex items-center gap-2 text-indigo-400 mb-3">
+          <Sparkles className="w-5 h-5" />
+          <span className="uppercase tracking-widest text-xs">Choose Your Challenge</span>
+        </div>
+        <h2 className="text-2xl md:text-3xl font-bold text-white">
+          Pick a Brain Boost Game
+        </h2>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {games.map((game) => {
           const isSelected = selectedGame === game.id;
+
           return (
-            <button
+            <motion.button
               key={game.id}
+              whileHover={{ y: -6 }}
+              whileTap={{ scale: 0.97 }}
               onClick={() => onSelectGame(game.id)}
               className={`
-                relative p-4 rounded-xl border-2 transition-all duration-300
-                ${isSelected 
-                  ? 'border-blue-500 bg-blue-500/20 shadow-lg shadow-blue-500/20' 
-                  : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800'
-                }
+                group relative p-6 rounded-2xl
+                backdrop-blur-xl bg-white/5
+                border transition-all duration-300
+                shadow-xl
+                ${isSelected
+                  ? 'border-indigo-500 shadow-indigo-500/30'
+                  : 'border-white/10 hover:border-indigo-400/60'}
               `}
             >
-              <div className="flex flex-col items-center gap-3">
-                <div 
+              {/* Glow Effect */}
+              <div
+                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-2xl"
+                style={{ backgroundColor: `${game.color}33` }}
+              />
+
+              <div className="relative z-10 flex flex-col items-center text-center gap-4">
+                <div
                   className={`
-                    w-12 h-12 rounded-lg flex items-center justify-center
-                    transition-transform duration-300
+                    w-16 h-16 rounded-2xl flex items-center justify-center
+                    transition-all duration-300
                     ${isSelected ? 'scale-110' : 'group-hover:scale-105'}
                   `}
-                  style={{ backgroundColor: `${game.color}20` }}
+                  style={{
+                    background: `linear-gradient(135deg, ${game.color}30, transparent)`,
+                    boxShadow: isSelected
+                      ? `0 0 25px ${game.color}55`
+                      : 'none',
+                  }}
                 >
-                  <GameIcon type={game.icon} color={game.color} className="w-6 h-6" />
+                  <GameIcon type={game.icon} color={game.color} />
                 </div>
-                <div className="text-center">
-                  <h3 className={`font-semibold ${isSelected ? 'text-blue-400' : 'text-slate-300'}`}>
+
+                <div>
+                  <h3
+                    className={`text-lg font-semibold transition-colors ${
+                      isSelected ? 'text-indigo-400' : 'text-white'
+                    }`}
+                  >
                     {game.name}
                   </h3>
-                  <p className="text-xs text-slate-500 mt-1">{game.description}</p>
+                  <p className="text-sm text-slate-400 mt-1">
+                    {game.description}
+                  </p>
+                </div>
+
+                <div
+                  className={`mt-3 w-full text-sm font-medium rounded-xl py-2 transition-all ${
+                    isSelected
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-white/10 text-slate-300 group-hover:bg-white/20'
+                  }`}
+                >
+                  {isSelected ? 'Selected' : 'Play Now'}
                 </div>
               </div>
-              
-              {/* Selection indicator */}
-              {isSelected && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                  <div className="w-2 h-2 bg-white rounded-full" />
-                </div>
-              )}
-            </button>
+            </motion.button>
           );
         })}
       </div>
