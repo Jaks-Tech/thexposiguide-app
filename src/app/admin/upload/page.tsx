@@ -22,8 +22,12 @@ import ReturnToTop from "@/components/ReturnToTop";
 import AddStudentSection from "@/components/admin/AddStudentSection";
 import { logActivity } from "@/lib/logActivity";
 
+// --- Timeplanner Components ---
+import AllocationBoard from "@/components/admin/scheduler/AllocationBoard";
+
 const menuItems = [
   { id: "overview", label: "Overview", icon: "📊" },
+  { id: "planner", label: "Academic Timetable", icon: "📅" }, // NEW TIMEPLANNER TAB
   { id: "students", label: "Add Students", icon: "👤" },
   { id: "upload-files", label: "Upload Files (Notes, Past Papers, MD files)", icon: "📂" },
   { id: "links", label: "Add Useful Links", icon: "🌐" },
@@ -32,7 +36,7 @@ const menuItems = [
   { id: "recurring", label: "Post Recurring Announcements", icon: "🔁" },
   { id: "edit-announce", label: "Edit Announcements", icon: "✏️" },
   { id: "delete-items", label: "Delete Items (all files above)", icon: "🗑️" },
-  { id: "billing", label: "Subscription & Plan", icon: "💳" }, // SAAS FEATURE
+  { id: "billing", label: "Subscription & Plan", icon: "💳" },
 ];
 
 function Toast({ message }: { message: string }) {
@@ -59,7 +63,6 @@ export default function AdminDashboard() {
     if (!isAuth) {
         router.push("/admin/login");
     } else {
-        // Fetch Tenant/Org Data for SaaS
         fetch("/api/saas/organization")
           .then(res => res.json())
           .then(data => {
@@ -91,6 +94,9 @@ export default function AdminDashboard() {
     assignments: 0,
     announcements: 0,
   });
+
+  // --- NEW TEACHER FORM STATE ---
+  const [teacherForm, setTeacherForm] = useState({ full_name: "", email: "", department: "" });
 
   /* ---------------- STATS FETCH ---------------- */
   useEffect(() => {
@@ -128,14 +134,31 @@ export default function AdminDashboard() {
   }
 
   /* ---------------- HANDLERS ---------------- */
+  async function handleTeacherEnroll(e: React.FormEvent) {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/admin/timeplanner/teachers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(teacherForm),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast("Lecturer Enrolled successfully! ✅");
+        setTeacherForm({ full_name: "", email: "", department: "" });
+        pushActivity(`Enrolled teacher: ${teacherForm.full_name}`);
+      } else {
+        showToast(data.error || "Enrollment failed");
+      }
+    } catch (err) {
+      showToast("Server error during enrollment");
+    }
+  }
+
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
     if (!files.length) return showToast("Select at least one file first.");
-    
-    // SaaS Limit Check
-    if (!isPro && stats.notes > 50) {
-        return showToast("Storage limit reached. Upgrade to Pro!");
-    }
+    if (!isPro && stats.notes > 50) return showToast("Storage limit reached. Upgrade to Pro!");
 
     setIsUploading(true);
     try {
@@ -208,7 +231,6 @@ export default function AdminDashboard() {
     } catch { showToast("Delete error."); }
   }
 
-  // --- Graph Data Construction ---
   const chartData = [
     { name: "Notes", value: stats.notes, color: "#3b82f6" },
     { name: "Papers", value: stats.papers, color: "#8b5cf6" },
@@ -245,7 +267,7 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-2">
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {menuItems.map((item) => (
             <button
               key={item.id}
@@ -271,7 +293,6 @@ export default function AdminDashboard() {
       <main className="flex-1 p-8 md:p-14 overflow-y-auto">
         <div className="max-w-6xl mx-auto">
           
-          {/* TAB: OVERVIEW (With Graphs) */}
           {activeTab === "overview" && (
             <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
               <header className="relative text-center mb-16 px-8 py-14 rounded-[3.5rem] bg-white border border-slate-200/50 shadow-[0_20px_50px_rgba(0,0,0,0.02)] max-w-4xl mx-auto">
@@ -339,29 +360,46 @@ export default function AdminDashboard() {
                   </div>
                 ))}
               </div>
-              
-              <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm">
-                <div className="flex items-center justify-between mb-8">
-                   <h3 className="text-lg font-bold text-slate-800">Recent Activity</h3>
-                   <span className="px-3 py-1 bg-slate-100 text-slate-400 text-[10px] font-black rounded-full uppercase tracking-tighter">Live Updates</span>
-                </div>
-                <ul className="space-y-5">
-                  {activityLog.map((entry, idx) => (
-                    <li key={idx} className="text-sm text-slate-600 flex gap-4 items-start">
-                      <span className="w-1.5 h-6 rounded-full bg-blue-500 mt-0.5 shrink-0" /> 
-                      <div className="flex flex-col">
-                        <span className="font-bold text-slate-800">{entry.split(" — ")[1]}</span>
-                        <span className="text-[10px] text-slate-400 font-bold uppercase mt-1">{entry.split(" — ")[0]}</span>
-                      </div>
-                    </li>
-                  ))}
-                  {activityLog.length === 0 && <p className="text-slate-400 italic text-sm">No actions recorded in this session.</p>}
-                </ul>
-              </div>
             </div>
           )}
 
-          {/* TAB: BILLING (SaaS Feature) */}
+          {/* TAB: PLANNER & LECTURER MGMT */}
+          {activeTab === "planner" && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+              {/* Part A: Enrollment Section */}
+              <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <h3 className="text-xl font-black text-slate-900 mb-6 tracking-tight">Lecturer Onboarding</h3>
+                <form onSubmit={handleTeacherEnroll} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <input 
+                    type="text" placeholder="Full Name" value={teacherForm.full_name}
+                    className="p-4 rounded-2xl bg-slate-50 border-none text-sm font-bold outline-none"
+                    onChange={(e) => setTeacherForm({...teacherForm, full_name: e.target.value})}
+                    required
+                  />
+                  <input 
+                    type="email" placeholder="Email Address" value={teacherForm.email}
+                    className="p-4 rounded-2xl bg-slate-50 border-none text-sm font-bold outline-none"
+                    onChange={(e) => setTeacherForm({...teacherForm, email: e.target.value})}
+                    required
+                  />
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" placeholder="Department" value={teacherForm.department}
+                      className="flex-1 p-4 rounded-2xl bg-slate-50 border-none text-sm font-bold outline-none"
+                      onChange={(e) => setTeacherForm({...teacherForm, department: e.target.value})}
+                      required
+                    />
+                    <button className="px-6 bg-blue-600 text-white font-bold rounded-2xl text-xs hover:bg-blue-700">ENROLL</button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Part B: The Allocation Board */}
+              <AllocationBoard />
+            </div>
+          )}
+
+          {/* TAB: OTHER SECTIONS */}
           {activeTab === "billing" && (
             <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm animate-in fade-in duration-500">
                <h2 className="text-3xl font-black mb-6">Subscription Management</h2>
@@ -375,7 +413,6 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* TAB: OTHER SECTIONS */}
           {activeTab === "students" && <section className="animate-in fade-in duration-500"><AddStudentSection /></section>}
 
           {activeTab === "upload-files" && (

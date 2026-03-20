@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { useState, useRef } from "react";
 import { FiChevronDown, FiMenu, FiX } from "react-icons/fi";
 import { FaFlask } from "react-icons/fa";
-import { GiHand, GiLeg, GiPelvisBone } from "react-icons/gi";
-import { MdMenuBook, MdHome, MdSportsEsports, MdAssignment, MdCampaign } from "react-icons/md";
+import { GiHand, GiLeg, GiPelvisBone, GiAbstract014 } from "react-icons/gi";
+import { MdMenuBook, MdHome, MdSportsEsports, MdAssignment, MdCampaign, MdCalendarToday } from "react-icons/md";
 import { PiRobotBold } from "react-icons/pi";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -192,15 +192,7 @@ function NavContent({ setIsMenuOpen }: { setIsMenuOpen: (o: boolean) => void }) 
             {/* --- New Grouped Section --- */}
         <div className="border-t border-gray-100 my-1"></div>
 
-        <Link href="/assignments" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50">
-          <MdAssignment size={20} className="text-orange-500" /> 
-          <span className="font-medium">Assignments</span>
-        </Link>
 
-        <Link href="/announcements" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50">
-          <MdCampaign size={20} className="text-emerald-600" /> 
-          <span className="font-medium">Announcements</span>
-        </Link>
         <Link href="/xposilearn" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50">
           <MdMenuBook size={20} className="text-indigo-600" /> 
           <span className="font-medium">XPosiLearn</span>
@@ -215,8 +207,29 @@ function NavContent({ setIsMenuOpen }: { setIsMenuOpen: (o: boolean) => void }) 
         </Link>
 
 
+
   </div>
-</Dropdown>
+        </Dropdown>
+              <Dropdown label="Academic Feeds" icon={<GiAbstract014 size={18} />}>  
+                <div className="flex flex-col"></div>
+
+                <Link href="/student-tt" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50">
+                <MdCalendarToday size={20} className="text-blue-600" /> 
+                  <span className="font-medium">Timetable</span>
+                </Link>
+
+                <Link href="/assignments" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50">
+                  <MdAssignment size={20} className="text-orange-500" /> 
+                  <span className="font-medium">Assignments</span>
+                </Link>
+
+                <Link href="/announcements" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50">
+                  <MdCampaign size={20} className="text-emerald-600" /> 
+                  <span className="font-medium">Announcements</span>
+                </Link>
+
+
+              </Dropdown>
 
       <NavItem href="/games" icon={<MdSportsEsports size={18} />} onClick={close}>
         Game Retreat
