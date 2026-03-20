@@ -2,9 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell 
-} from 'recharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 
 // --- Components ---
 import UploadFileSection from "@/components/admin/UploadFileSection";
@@ -27,7 +34,7 @@ import AllocationBoard from "@/components/admin/scheduler/AllocationBoard";
 
 const menuItems = [
   { id: "overview", label: "Overview", icon: "📊" },
-  { id: "planner", label: "Academic Timetable", icon: "📅" }, // NEW TIMEPLANNER TAB
+  { id: "planner", label: "Academic Timetable", icon: "📅" },
   { id: "students", label: "Add Students", icon: "👤" },
   { id: "upload-files", label: "Upload Files (Notes, Past Papers, MD files)", icon: "📂" },
   { id: "links", label: "Add Useful Links", icon: "🌐" },
@@ -61,14 +68,14 @@ export default function AdminDashboard() {
   useEffect(() => {
     const isAuth = localStorage.getItem("admin-auth");
     if (!isAuth) {
-        router.push("/admin/login");
+      router.push("/admin/login");
     } else {
-        fetch("/api/saas/organization")
-          .then(res => res.json())
-          .then(data => {
-              setOrgData({ name: data.name, plan: data.plan });
-              setIsPro(data.plan === "Pro" || data.plan === "Enterprise");
-          });
+      fetch("/api/saas/organization")
+        .then((res) => res.json())
+        .then((data) => {
+          setOrgData({ name: data.name, plan: data.plan });
+          setIsPro(data.plan === "Pro" || data.plan === "Enterprise");
+        });
     }
   }, [router]);
 
@@ -85,6 +92,7 @@ export default function AdminDashboard() {
   const [linkData, setLinkData] = useState({ name: "", url: "", category: "" });
   const [links, setLinks] = useState<any[]>([]);
   const [toast, setToast] = useState("");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [activityLog, setActivityLog] = useState<string[]>([]);
   const [stats, setStats] = useState({
     activeUsers: 0,
@@ -125,7 +133,9 @@ export default function AdminDashboard() {
 
   /* ---------------- HELPERS ---------------- */
   function pushActivity(message: string) {
-    setActivityLog((prev) => [`${new Date().toLocaleTimeString()} — ${message}`, ...prev].slice(0, 8));
+    setActivityLog((prev) =>
+      [`${new Date().toLocaleTimeString()} — ${message}`, ...prev].slice(0, 8)
+    );
   }
 
   function showToast(msg: string) {
@@ -209,7 +219,9 @@ export default function AdminDashboard() {
         const data2 = await res2.json();
         if (data2.links) setLinks(data2.links);
       }
-    } catch { showToast("Delete error."); }
+    } catch {
+      showToast("Delete error.");
+    }
   }
 
   async function handleFileDelete(e: React.FormEvent) {
@@ -228,7 +240,9 @@ export default function AdminDashboard() {
         showToast("File deleted.");
         await logActivity(`Deleted file ID: ${fileId}`);
       }
-    } catch { showToast("Delete error."); }
+    } catch {
+      showToast("Delete error.");
+    }
   }
 
   const chartData = [
@@ -250,20 +264,48 @@ export default function AdminDashboard() {
         }
       `}</style>
 
-      {/* SIDEBAR */}
-      <aside className={`hidden lg:flex flex-col ${collapsedSidebar ? "w-20" : "w-72"} bg-white border-r border-slate-200 shadow-sm sticky top-0 h-screen transition-all duration-300`}>
+      <aside
+        className={`
+          fixed top-0 left-0 h-screen z-50 bg-white border-r border-slate-200 shadow-sm
+          transition-transform duration-300
+          ${collapsedSidebar ? "w-20" : "w-72"}
+          ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"}
+          lg:translate-x-0 lg:static lg:flex
+          flex flex-col
+        `}
+      >
         <div className="flex flex-col px-6 py-8 border-b border-slate-50 gap-2">
           <div className="flex items-center justify-between">
-            {!collapsedSidebar && <span className="font-black text-blue-700 text-xl tracking-tighter">XPosiGuide</span>}
-            <button onClick={() => setCollapsedSidebar(!collapsedSidebar)} className="text-slate-400 hover:text-blue-600 transition-colors">
-              {collapsedSidebar ? "»" : "«"}
-            </button>
+            {!collapsedSidebar && (
+              <span className="font-black text-blue-700 text-xl tracking-tighter">
+                XPosiGuide
+              </span>
+            )}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCollapsedSidebar(!collapsedSidebar)}
+                className="text-slate-400 hover:text-blue-600 transition-colors hidden lg:block"
+              >
+                {collapsedSidebar ? "»" : "«"}
+              </button>
+              <button
+                onClick={() => setMobileSidebarOpen(false)}
+                className="text-slate-400 hover:text-red-500 lg:hidden"
+              >
+                ✕
+              </button>
+            </div>
           </div>
+
           {!collapsedSidebar && (
-              <div className="mt-2 px-3 py-1 bg-blue-50 rounded-lg border border-blue-100">
-                  <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">{orgData.name}</p>
-                  <p className="text-[9px] font-medium text-blue-400">{orgData.plan} Plan</p>
-              </div>
+            <div className="mt-2 px-3 py-1 bg-blue-50 rounded-lg border border-blue-100">
+              <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">
+                {orgData.name}
+              </p>
+              <p className="text-[9px] font-medium text-blue-400">
+                {orgData.plan} Plan
+              </p>
+            </div>
           )}
         </div>
 
@@ -271,11 +313,14 @@ export default function AdminDashboard() {
           {menuItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => {
+                setActiveTab(item.id);
+                setMobileSidebarOpen(false);
+              }}
               className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all text-sm font-bold ${
-                activeTab === item.id 
-                ? "bg-blue-600 text-white shadow-xl shadow-blue-100" 
-                : "text-slate-500 hover:bg-slate-50"
+                activeTab === item.id
+                  ? "bg-blue-600 text-white shadow-xl shadow-blue-100"
+                  : "text-slate-500 hover:bg-slate-50"
               }`}
             >
               <span className="text-xl">{item.icon}</span>
@@ -283,16 +328,36 @@ export default function AdminDashboard() {
             </button>
           ))}
         </nav>
-        
+
         <div className="p-4 border-t border-slate-50">
-             <Logout />
+          <Logout />
         </div>
       </aside>
 
-      {/* MAIN VIEWPORT */}
-      <main className="flex-1 p-8 md:p-14 overflow-y-auto">
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+
+      <main className="flex-1 p-4 sm:p-6 md:p-10 lg:p-14 overflow-y-auto">
+        {/* Sticky Top-Left Mobile Trigger */}
+        <div className="lg:hidden flex items-center justify-between mb-6">
+          <button
+            onClick={() => setMobileSidebarOpen(true)}
+            className="sticky top-0 left-0 z-40 w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-xl shadow-md transition-transform active:scale-95"
+            aria-label="Open Menu"
+          >
+            <span className="text-xl">»</span>
+          </button>
+
+          <span className="text-sm font-bold text-slate-400 tracking-tight">
+            {orgData.name}
+          </span>
+        </div>
+
         <div className="max-w-6xl mx-auto">
-          
           {activeTab === "overview" && (
             <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
               <header className="relative text-center mb-16 px-8 py-14 rounded-[3.5rem] bg-white border border-slate-200/50 shadow-[0_20px_50px_rgba(0,0,0,0.02)] max-w-4xl mx-auto">
@@ -309,7 +374,10 @@ export default function AdminDashboard() {
                 </div>
 
                 <h1 className="text-4xl sm:text-6xl font-black text-slate-900 tracking-tight mb-4">
-                  System <span className="bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent">Analytics</span>
+                  System{" "}
+                  <span className="bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent">
+                    Analytics
+                  </span>
                 </h1>
 
                 <p className="text-slate-500 text-base sm:text-lg max-w-xl mx-auto leading-relaxed font-medium">
@@ -318,22 +386,35 @@ export default function AdminDashboard() {
               </header>
 
               <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm">
-                <h3 className="text-lg font-bold mb-8 text-slate-800 uppercase tracking-widest text-[11px]">Content Distribution</h3>
+                <h3 className="text-lg font-bold mb-8 text-slate-800 uppercase tracking-widest text-[11px]">
+                  Content Distribution
+                </h3>
                 <div className="w-full h-[320px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <BarChart
+                      data={chartData}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis 
-                        dataKey="name" 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 700 }}
+                      <XAxis
+                        dataKey="name"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: "#94a3b8", fontSize: 12, fontWeight: 700 }}
                         dy={10}
                       />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                      <Tooltip 
-                        cursor={{ fill: '#f8fafc' }}
-                        contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: "#94a3b8", fontSize: 12 }}
+                      />
+                      <Tooltip
+                        cursor={{ fill: "#f8fafc" }}
+                        contentStyle={{
+                          borderRadius: "20px",
+                          border: "none",
+                          boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
+                        }}
                       />
                       <Bar dataKey="value" radius={[12, 12, 0, 0]} barSize={50}>
                         {chartData.map((entry, index) => (
@@ -344,7 +425,7 @@ export default function AdminDashboard() {
                   </ResponsiveContainer>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
                 {[
                   { label: "Active Users", value: stats.activeUsers, color: "text-emerald-600", bg: "bg-emerald-50" },
@@ -354,8 +435,13 @@ export default function AdminDashboard() {
                   { label: "Assignments", value: stats.assignments, color: "text-pink-600", bg: "bg-pink-50" },
                   { label: "Announcements", value: stats.announcements, color: "text-indigo-600", bg: "bg-indigo-50" },
                 ].map((s) => (
-                  <div key={s.label} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">{s.label}</p>
+                  <div
+                    key={s.label}
+                    className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                  >
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
+                      {s.label}
+                    </p>
                     <p className={`text-5xl font-black ${s.color}`}>{s.value}</p>
                   </div>
                 ))}
@@ -363,66 +449,94 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* TAB: PLANNER & LECTURER MGMT */}
           {activeTab === "planner" && (
             <div className="space-y-10 animate-in fade-in duration-500">
-              {/* Part A: Enrollment Section */}
               <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                <h3 className="text-xl font-black text-slate-900 mb-6 tracking-tight">Lecturer Onboarding</h3>
-                <form onSubmit={handleTeacherEnroll} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <input 
-                    type="text" placeholder="Full Name" value={teacherForm.full_name}
+                <h3 className="text-xl font-black text-slate-900 mb-6 tracking-tight">
+                  Lecturer Onboarding
+                </h3>
+                <form
+                  onSubmit={handleTeacherEnroll}
+                  className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                >
+                  <input
+                    type="text"
+                    placeholder="Full Name"
+                    value={teacherForm.full_name}
                     className="p-4 rounded-2xl bg-slate-50 border-none text-sm font-bold outline-none"
-                    onChange={(e) => setTeacherForm({...teacherForm, full_name: e.target.value})}
+                    onChange={(e) => setTeacherForm({ ...teacherForm, full_name: e.target.value })}
                     required
                   />
-                  <input 
-                    type="email" placeholder="Email Address" value={teacherForm.email}
+                  <input
+                    type="email"
+                    placeholder="Email Address"
+                    value={teacherForm.email}
                     className="p-4 rounded-2xl bg-slate-50 border-none text-sm font-bold outline-none"
-                    onChange={(e) => setTeacherForm({...teacherForm, email: e.target.value})}
+                    onChange={(e) => setTeacherForm({ ...teacherForm, email: e.target.value })}
                     required
                   />
                   <div className="flex gap-2">
-                    <input 
-                      type="text" placeholder="Department" value={teacherForm.department}
+                    <input
+                      type="text"
+                      placeholder="Department"
+                      value={teacherForm.department}
                       className="flex-1 p-4 rounded-2xl bg-slate-50 border-none text-sm font-bold outline-none"
-                      onChange={(e) => setTeacherForm({...teacherForm, department: e.target.value})}
+                      onChange={(e) => setTeacherForm({ ...teacherForm, department: e.target.value })}
                       required
                     />
-                    <button className="px-6 bg-blue-600 text-white font-bold rounded-2xl text-xs hover:bg-blue-700">ENROLL</button>
+                    <button className="px-6 bg-blue-600 text-white font-bold rounded-2xl text-xs hover:bg-blue-700">
+                      ENROLL
+                    </button>
                   </div>
                 </form>
               </div>
-
-              {/* Part B: The Allocation Board */}
               <AllocationBoard />
             </div>
           )}
 
-          {/* TAB: OTHER SECTIONS */}
           {activeTab === "billing" && (
             <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm animate-in fade-in duration-500">
-               <h2 className="text-3xl font-black mb-6">Subscription Management</h2>
-               <div className="p-6 bg-blue-50 rounded-2xl border border-blue-100 mb-8">
-                  <p className="text-sm font-bold text-blue-800">Current Plan: <span className="uppercase">{orgData.plan}</span></p>
-                  <p className="text-xs text-blue-600 mt-1">Your organization is currently on the {orgData.plan} tier.</p>
-               </div>
-               <button className="px-8 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all">
-                   Upgrade to Enterprise
-               </button>
+              <h2 className="text-3xl font-black mb-6">Subscription Management</h2>
+              <div className="p-6 bg-blue-50 rounded-2xl border border-blue-100 mb-8">
+                <p className="text-sm font-bold text-blue-800">
+                  Current Plan: <span className="uppercase">{orgData.plan}</span>
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  Your organization is currently on the {orgData.plan} tier.
+                </p>
+              </div>
+              <button className="px-8 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all">
+                Upgrade to Enterprise
+              </button>
             </div>
           )}
 
-          {activeTab === "students" && <section className="animate-in fade-in duration-500"><AddStudentSection /></section>}
+          {activeTab === "students" && (
+            <section className="animate-in fade-in duration-500">
+              <AddStudentSection />
+            </section>
+          )}
 
           {activeTab === "upload-files" && (
             <section className="animate-in fade-in duration-500">
               <UploadFileSection
-                files={files} setFiles={setFiles} image={image} setImage={setImage}
-                category={category} setCategory={setCategory} year={year} setYear={setYear}
-                semester={semester} setSemester={setSemester} unitName={unitName} setUnitName={setUnitName}
-                module={module} setModule={setModule} isUploading={isUploading}
-                handleUpload={handleUpload} uploadProgress={uploadProgress}
+                files={files}
+                setFiles={setFiles}
+                image={image}
+                setImage={setImage}
+                category={category}
+                setCategory={setCategory}
+                year={year}
+                setYear={setYear}
+                semester={semester}
+                setSemester={setSemester}
+                unitName={unitName}
+                setUnitName={setUnitName}
+                module={module}
+                setModule={setModule}
+                isUploading={isUploading}
+                handleUpload={handleUpload}
+                uploadProgress={uploadProgress}
               />
             </section>
           )}
@@ -430,7 +544,8 @@ export default function AdminDashboard() {
           {activeTab === "links" && (
             <section className="animate-in fade-in duration-500">
               <AddLinkSection
-                linkData={linkData} setLinkData={setLinkData}
+                linkData={linkData}
+                setLinkData={setLinkData}
                 handleLinkSubmit={async (e: React.FormEvent) => {
                   e.preventDefault();
                   const res = await fetch("/api/add-link", {
@@ -448,11 +563,27 @@ export default function AdminDashboard() {
             </section>
           )}
 
-          {activeTab === "assignments" && <section className="animate-in fade-in duration-500"><UploadAssignmentSection /></section>}
-          {activeTab === "announcements" && <section className="animate-in fade-in duration-500"><PostAnnouncementSection /></section>}
-          {activeTab === "recurring" && <section className="animate-in fade-in duration-500"><RecurringAnnouncementSection /></section>}
-          {activeTab === "edit-announce" && <section className="animate-in fade-in duration-500"><EditAnnouncementSection /></section>}
-          
+          {activeTab === "assignments" && (
+            <section className="animate-in fade-in duration-500">
+              <UploadAssignmentSection />
+            </section>
+          )}
+          {activeTab === "announcements" && (
+            <section className="animate-in fade-in duration-500">
+              <PostAnnouncementSection />
+            </section>
+          )}
+          {activeTab === "recurring" && (
+            <section className="animate-in fade-in duration-500">
+              <RecurringAnnouncementSection />
+            </section>
+          )}
+          {activeTab === "edit-announce" && (
+            <section className="animate-in fade-in duration-500">
+              <EditAnnouncementSection />
+            </section>
+          )}
+
           {activeTab === "delete-items" && (
             <div className="grid md:grid-cols-2 gap-10 animate-in fade-in duration-500">
               <DeleteFileSection handleFileDelete={handleFileDelete} />
