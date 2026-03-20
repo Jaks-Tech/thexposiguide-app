@@ -23,6 +23,7 @@ export default function Footer() {
         { name: "XPosiLearn", href: "/xposilearn" },
         { name: "Assignments", href: "/assignments" },
         { name: "Announcements", href: "/announcements" },
+        { name: "Timetable", href: "/student-tt" },
         { name: "Game Retreat", href: "/games" },
       ],
     },
