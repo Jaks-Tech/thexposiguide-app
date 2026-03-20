@@ -450,46 +450,68 @@ export default function AdminDashboard() {
           )}
 
           {activeTab === "planner" && (
-            <div className="space-y-10 animate-in fade-in duration-500">
-              <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                <h3 className="text-xl font-black text-slate-900 mb-6 tracking-tight">
+            <div className="space-y-6 sm:space-y-8 lg:space-y-10 animate-in fade-in duration-500">
+              
+              <div className="bg-white p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-[2.5rem] border border-slate-100 shadow-sm">
+                
+                <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-4 sm:mb-6 tracking-tight">
                   Lecturer Onboarding
                 </h3>
+
                 <form
                   onSubmit={handleTeacherEnroll}
-                  className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
                 >
+                  {/* Full Name */}
                   <input
                     type="text"
                     placeholder="Full Name"
                     value={teacherForm.full_name}
-                    className="p-4 rounded-2xl bg-slate-50 border-none text-sm font-bold outline-none"
-                    onChange={(e) => setTeacherForm({ ...teacherForm, full_name: e.target.value })}
+                    className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-50 text-sm font-bold outline-none"
+                    onChange={(e) =>
+                      setTeacherForm({ ...teacherForm, full_name: e.target.value })
+                    }
                     required
                   />
+
+                  {/* Email */}
                   <input
                     type="email"
                     placeholder="Email Address"
                     value={teacherForm.email}
-                    className="p-4 rounded-2xl bg-slate-50 border-none text-sm font-bold outline-none"
-                    onChange={(e) => setTeacherForm({ ...teacherForm, email: e.target.value })}
+                    className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-50 text-sm font-bold outline-none"
+                    onChange={(e) =>
+                      setTeacherForm({ ...teacherForm, email: e.target.value })
+                    }
                     required
                   />
-                  <div className="flex gap-2">
+
+                  {/* Department + Button */}
+                  <div className="flex flex-col sm:flex-row gap-2 sm:col-span-2 lg:col-span-1">
                     <input
                       type="text"
                       placeholder="Department"
                       value={teacherForm.department}
-                      className="flex-1 p-4 rounded-2xl bg-slate-50 border-none text-sm font-bold outline-none"
-                      onChange={(e) => setTeacherForm({ ...teacherForm, department: e.target.value })}
+                      className="flex-1 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-50 text-sm font-bold outline-none"
+                      onChange={(e) =>
+                        setTeacherForm({
+                          ...teacherForm,
+                          department: e.target.value,
+                        })
+                      }
                       required
                     />
-                    <button className="px-6 bg-blue-600 text-white font-bold rounded-2xl text-xs hover:bg-blue-700">
+
+                    <button
+                      type="submit"
+                      className="w-full sm:w-auto px-4 sm:px-6 py-3 bg-blue-600 text-white font-bold rounded-xl sm:rounded-2xl text-xs sm:text-sm hover:bg-blue-700 transition"
+                    >
                       ENROLL
                     </button>
                   </div>
                 </form>
               </div>
+
               <AllocationBoard />
             </div>
           )}
