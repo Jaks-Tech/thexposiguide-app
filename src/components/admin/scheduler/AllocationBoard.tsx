@@ -1,309 +1,602 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 
-// --- 1. Data Intelligence Interfaces ---
-interface Teacher {
-  id: string;
-  full_name: string;
-  email: string;
-  department: string;
-}
+// --- Components ---
+import UploadFileSection from "@/components/admin/UploadFileSection";
+import AddLinkSection from "@/components/admin/AddLinkSection";
+import PostAnnouncementSection from "@/components/admin/PostAnnouncementSection";
+import RecurringAnnouncementSection from "@/components/admin/RecurringAnnouncementSection";
+import EditAnnouncementSection from "@/components/admin/EditAnnouncementSection";
+import UploadAssignmentSection from "@/components/admin/UploadAssignmentSection";
+import DeleteAssignmentSection from "@/components/admin/DeleteAssignmentSection";
+import DeleteAnnouncementSection from "@/components/admin/DeleteAnnouncementSection";
+import DeleteLinkSection from "@/components/admin/DeleteLinkSection";
+import DeleteFileSection from "@/components/admin/DeleteFileSection";
+import Logout from "@/components/admin/Logout";
+import ReturnToTop from "@/components/ReturnToTop";
+import AddStudentSection from "@/components/admin/AddStudentSection";
+import { logActivity } from "@/lib/logActivity";
 
-interface Unit {
-  id: string;
-  name: string;
-  year: string;
-  semester: number;
-}
+// --- Timeplanner Components ---
+import AllocationBoard from "@/components/admin/scheduler/AllocationBoard";
 
-interface Allocation {
-  id: string;
-  day_of_week: string;
-  start_time: string;
-  room_name: string;
-  teacher_id: string;
-  unit_id: string;
-  teachers: { full_name: string; email: string; };
-  units: { name: string; year: string; semester: number; };
-}
-
-const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-const TIME_SLOTS = [
-  { label: "08:00", isBreak: false },
-  { label: "09:00", isBreak: false },
-  { label: "10:00", isBreak: true, title: "TEA" },
-  { label: "10:30", isBreak: false },
-  { label: "11:30", isBreak: false },
-  { label: "12:30", isBreak: true, title: "LUNCH" },
-  { label: "14:00", isBreak: false },
-  { label: "15:00", isBreak: false },
-  { label: "16:00", isBreak: false }, // ENSURED 16:00 IS PRESENT
+const menuItems = [
+  { id: "overview", label: "Overview", icon: "📊" },
+  { id: "planner", label: "Academic Timetable", icon: "📅" },
+  { id: "students", label: "Add Students", icon: "👤" },
+  { id: "upload-files", label: "Upload Files (Notes, Past Papers, MD files)", icon: "📂" },
+  { id: "links", label: "Add Useful Links", icon: "🌐" },
+  { id: "assignments", label: "Upload Assignments", icon: "📘" },
+  { id: "announcements", label: "Make Announcements", icon: "📢" },
+  { id: "recurring", label: "Post Recurring Announcements", icon: "🔁" },
+  { id: "edit-announce", label: "Edit Announcements", icon: "✏️" },
+  { id: "delete-items", label: "Delete Items (all files above)", icon: "🗑️" },
+  { id: "billing", label: "Subscription & Plan", icon: "💳" },
 ];
 
-export default function AllocationBoard() {
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [units, setUnits] = useState<Unit[]>([]);
-  const [allocations, setAllocations] = useState<Allocation[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  const [currentYear, setCurrentYear] = useState("Year 1"); 
-  const [currentSemester, setCurrentSemester] = useState(1);
-  const [selectedUnit, setSelectedUnit] = useState("");
-  const [selectedTeacher, setSelectedTeacher] = useState("");
-  const [roomName, setRoomName] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
+function Toast({ message }: { message: string }) {
+  if (!message) return null;
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-full bg-blue-700 text-white shadow-lg animate-[fadeInOut_4s_ease]">
+      {message}
+    </div>
+  );
+}
 
-  const [filterTeacher, setFilterTeacher] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
+export default function AdminDashboard() {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("overview");
+  const [collapsedSidebar, setCollapsedSidebar] = useState(false);
 
+  /* ---------------- SAAS STATE ---------------- */
+  const [orgData, setOrgData] = useState({ name: "Loading...", plan: "Free" });
+  const [isPro, setIsPro] = useState(false);
+
+  /* ---------------- AUTH ---------------- */
   useEffect(() => {
-    fetchInitialData();
-  }, [currentYear, currentSemester]);
+    const isAuth = localStorage.getItem("admin-auth");
+    if (!isAuth) {
+      router.push("/admin/login");
+    } else {
+      fetch("/api/saas/organization")
+        .then((res) => res.json())
+        .then((data) => {
+          setOrgData({ name: data.name, plan: data.plan });
+          setIsPro(data.plan === "Pro" || data.plan === "Enterprise");
+        });
+    }
+  }, [router]);
 
-  async function fetchInitialData() {
+  /* ---------------- SHARED STATE ---------------- */
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [image, setImage] = useState<File | null>(null);
+  const [category, setCategory] = useState("notes");
+  const [year, setYear] = useState("year-1");
+  const [module, setModule] = useState("upper");
+  const [isUploading, setIsUploading] = useState(false);
+  const [semester, setSemester] = useState(1);
+  const [unitName, setUnitName] = useState("");
+  const [linkData, setLinkData] = useState({ name: "", url: "", category: "" });
+  const [links, setLinks] = useState<any[]>([]);
+  const [toast, setToast] = useState("");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [activityLog, setActivityLog] = useState<string[]>([]);
+  const [stats, setStats] = useState({
+    activeUsers: 0,
+    notes: 0,
+    papers: 0,
+    modules: 0,
+    assignments: 0,
+    announcements: 0,
+  });
+
+  // --- NEW TEACHER FORM STATE ---
+  const [teacherForm, setTeacherForm] = useState({ full_name: "", email: "", department: "" });
+
+  /* ---------------- STATS FETCH ---------------- */
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const res = await fetch("/api/admin/stats");
+        const data = await res.json();
+        if (data.success) {
+          setStats({
+            activeUsers: data.activeUsers ?? 0,
+            notes: data.notes,
+            papers: data.papers,
+            modules: data.modules,
+            assignments: data.assignments,
+            announcements: data.announcements,
+          });
+        }
+      } catch (err) {
+        console.error("Failed loading stats", err);
+      }
+    }
+    fetchStats();
+    const interval = setInterval(fetchStats, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  /* ---------------- HELPERS ---------------- */
+  function pushActivity(message: string) {
+    setActivityLog((prev) =>
+      [`${new Date().toLocaleTimeString()} — ${message}`, ...prev].slice(0, 8)
+    );
+  }
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(""), 3500);
+  }
+
+  /* ---------------- HANDLERS ---------------- */
+  async function handleTeacherEnroll(e: React.FormEvent) {
+    e.preventDefault();
     try {
-      const [tRes, uRes, aRes] = await Promise.all([
-        fetch("/api/admin/timeplanner/teachers"),
-        fetch(`/api/admin/timeplanner/units?year=${currentYear}&semester=${currentSemester}`),
-        fetch("/api/admin/timeplanner/allocations")
-      ]);
-      const tData = await tRes.json();
-      const uData = await uRes.json();
-      const aData = await aRes.json();
-      
-      if (tData.success) setTeachers(tData.teachers);
-      if (uData.success) setUnits(uData.units);
-      if (aData.success) setAllocations(aData.allocations);
+      const res = await fetch("/api/admin/timeplanner/teachers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(teacherForm),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast("Lecturer Enrolled successfully! ✅");
+        setTeacherForm({ full_name: "", email: "", department: "" });
+        pushActivity(`Enrolled teacher: ${teacherForm.full_name}`);
+      } else {
+        showToast(data.error || "Enrollment failed");
+      }
     } catch (err) {
-      console.error("Sync Error", err);
-    } finally {
-      setLoading(false);
+      showToast("Server error during enrollment");
     }
   }
 
-  const handleAllocate = async (day: string, time: string) => {
-    if (editingId) {
-      setIsProcessing(true);
-      const res = await fetch(`/api/admin/timeplanner/allocate/${editingId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          day_of_week: day,
-          start_time: time,
-          teacher_id: selectedTeacher,
-          unit_id: selectedUnit,
-          room_name: roomName
-        })
-      });
-      if (res.ok) { resetControls(); await fetchInitialData(); }
-      setIsProcessing(false);
-      return;
-    }
+  async function handleUpload(e: React.FormEvent) {
+    e.preventDefault();
+    if (!files.length) return showToast("Select at least one file first.");
+    if (!isPro && stats.notes > 50) return showToast("Storage limit reached. Upgrade to Pro!");
 
-    if (!selectedUnit || !selectedTeacher || !roomName) return alert("Select Unit, Teacher, and Room.");
-    setIsProcessing(true);
-    const res = await fetch("/api/admin/timeplanner/allocate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        teacher_id: selectedTeacher,
-        unit_id: selectedUnit,
-        day_of_week: day,
-        start_time: time,
-        room_name: roomName,
-        academic_year: "2026/2027"
-      })
-    });
-    if (res.ok) { resetControls(); await fetchInitialData(); }
-    setIsProcessing(false);
-  };
-
-  const handleExecuteUpdate = async () => {
-    if (!editingId) return;
-    setIsProcessing(true);
-    const res = await fetch(`/api/admin/timeplanner/allocate/${editingId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        teacher_id: selectedTeacher, 
-        room_name: roomName, 
-        unit_id: selectedUnit 
-      })
-    });
-    if (res.ok) { resetControls(); await fetchInitialData(); }
-    setIsProcessing(false);
-  };
-
-  const handleSilentDelete = async (id: string) => {
-    const res = await fetch(`/api/admin/timeplanner/allocate/${id}`, { method: "DELETE" });
-    if (res.ok) await fetchInitialData();
-  };
-
-  const handlePublish = async () => {
-    setIsPublishing(true);
+    setIsUploading(true);
     try {
-      const res = await fetch("/api/admin/timeplanner/publish", { method: "POST" });
-      if (res.ok) {
-        alert("Semester Timetable Published! Emails Dispatched. 🚀");
-        await fetchInitialData();
+      for (const f of files) {
+        setUploadProgress((prev) => ({ ...prev, [f.name]: 10 }));
+        const formData = new FormData();
+        formData.append("file", f);
+        formData.append("category", category);
+        formData.append("year", year);
+        formData.append("semester", String(semester));
+        formData.append("unit_name", unitName || "");
+        if (category === "module") formData.append("module", module);
+        if (image) formData.append("image", image);
+
+        const res = await fetch("/api/upload", { method: "POST", body: formData });
+        const data = await res.json();
+        if (data.success) {
+          setUploadProgress((prev) => ({ ...prev, [f.name]: 100 }));
+          showToast(`Uploaded: ${f.name}`);
+          pushActivity(`Uploaded file: ${f.name}`);
+        }
       }
+      setFiles([]);
+      setImage(null);
     } catch (err) {
-      console.error("Publish Error:", err);
+      showToast("Upload error.");
     } finally {
-      setIsPublishing(false);
+      setIsUploading(false);
     }
-  };
+  }
 
-  const resetControls = () => {
-    setEditingId(null); setSelectedUnit(""); setSelectedTeacher(""); setRoomName("");
-  };
+  async function handleLinkDelete(e: React.FormEvent) {
+    e.preventDefault();
+    const select = document.getElementById("delLinkName") as HTMLSelectElement | null;
+    if (!select?.value) return showToast("Select a link to delete.");
+    const name = select.value;
+    if (!confirm(`Delete link "${name}"?`)) return;
+    try {
+      const res = await fetch("/api/delete-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if ((await res.json()).success) {
+        showToast("Link deleted.");
+        await logActivity(`Deleted link: ${name}`);
+        const res2 = await fetch("/api/get-links");
+        const data2 = await res2.json();
+        if (data2.links) setLinks(data2.links);
+      }
+    } catch {
+      showToast("Delete error.");
+    }
+  }
 
-  const startEditing = (alloc: Allocation) => {
-    setEditingId(alloc.id);
-    setSelectedUnit(alloc.unit_id);
-    setSelectedTeacher(alloc.teacher_id);
-    setRoomName(alloc.room_name);
-  };
+  async function handleFileDelete(e: React.FormEvent) {
+    e.preventDefault();
+    const fileSelect = document.getElementById("delFilename") as HTMLSelectElement | null;
+    if (!fileSelect?.value) return showToast("Select a file to delete.");
+    const fileId = fileSelect.value;
+    if (!confirm("Delete this file?")) return;
+    try {
+      const res = await fetch("/api/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: fileId }),
+      });
+      if ((await res.json()).success) {
+        showToast("File deleted.");
+        await logActivity(`Deleted file ID: ${fileId}`);
+      }
+    } catch {
+      showToast("Delete error.");
+    }
+  }
 
-  if (loading) return <div className="p-10 text-center font-black animate-pulse text-slate-700 uppercase text-xs">Syncing Academic Registry...</div>;
+  const chartData = [
+    { name: "Notes", value: stats.notes, color: "#3b82f6" },
+    { name: "Papers", value: stats.papers, color: "#8b5cf6" },
+    { name: "Modules", value: stats.modules, color: "#f97316" },
+    { name: "Assign", value: stats.assignments, color: "#ec4899" },
+    { name: "Announce", value: stats.announcements, color: "#6366f1" },
+  ];
 
   return (
-    <div className="flex flex-col gap-4 animate-in fade-in duration-700 max-w-full mx-auto">
-      
-      {/* 1. COMPACT NAV */}
-      <div className="flex items-center justify-between bg-white px-5 py-3 rounded-2xl border-2 border-slate-200 shadow-sm">
-          <div className="flex items-center gap-3">
-            <h3 className="text-[10px] font-black text-slate-900 uppercase">Class Selector</h3>
-              <select value={currentYear} onChange={(e) => setCurrentYear(e.target.value)} className="bg-slate-50 px-3 py-1.5 rounded-lg text-[10px] font-black outline-none border border-slate-300 text-slate-900">
-                  <option value="Year 1">YEAR 1</option>
-                  <option value="Year 2">YEAR 2</option>
-                  <option value="Year 3">YEAR 3</option>
-              </select>
-              <select value={currentSemester} onChange={(e) => setCurrentSemester(Number(e.target.value))} className="bg-slate-50 px-3 py-1.5 rounded-lg text-[10px] font-black outline-none border border-slate-300 text-slate-900">
-                  <option value={1}>SEM 1</option>
-                  <option value={2}>SEM 2</option>
-              </select>
+    <div className="flex min-h-screen bg-[#F8FAFC] text-slate-900 font-sans">
+      <style jsx global>{`
+        @keyframes fadeInOut {
+          0% { opacity: 0; transform: translateY(8px); }
+          10% { opacity: 1; transform: translateY(0); }
+          90% { opacity: 1; }
+          100% { opacity: 0; transform: translateY(8px); }
+        }
+      `}</style>
+
+      <aside
+        className={`
+          fixed top-0 left-0 h-screen z-50 bg-white border-r border-slate-200 shadow-sm
+          transition-transform duration-300
+          ${collapsedSidebar ? "w-20" : "w-72"}
+          ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"}
+          lg:translate-x-0 lg:static lg:flex
+          flex flex-col
+        `}
+      >
+        <div className="flex flex-col px-6 py-8 border-b border-slate-50 gap-2">
+          <div className="flex items-center justify-between">
+            {!collapsedSidebar && (
+              <span className="font-black text-blue-700 text-xl tracking-tighter">
+                XPosiGuide
+              </span>
+            )}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCollapsedSidebar(!collapsedSidebar)}
+                className="text-slate-400 hover:text-blue-600 transition-colors hidden lg:block"
+              >
+                {collapsedSidebar ? "»" : "«"}
+              </button>
+              <button
+                onClick={() => setMobileSidebarOpen(false)}
+                className="text-slate-400 hover:text-red-500 lg:hidden"
+              >
+                ✕
+              </button>
+            </div>
           </div>
-          {editingId && (
-              <button onClick={resetControls} className="text-[9px] font-black text-white bg-rose-600 px-4 py-1.5 rounded-lg hover:bg-rose-700 transition-all">CANCEL EDIT</button>
+
+          {!collapsedSidebar && (
+            <div className="mt-2 px-3 py-1 bg-blue-50 rounded-lg border border-blue-100">
+              <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">
+                {orgData.name}
+              </p>
+              <p className="text-[9px] font-medium text-blue-400">
+                {orgData.plan} Plan
+              </p>
+            </div>
           )}
-      </div>
+        </div>
 
-      {/* 2. COMPACT EXECUTION PANEL */}
-      <div className={`px-6 py-5 rounded-[1.5rem] border-2 transition-all flex flex-col lg:flex-row justify-between gap-4 items-center ${editingId ? 'bg-indigo-700 border-indigo-400' : 'bg-white border-slate-200 shadow-sm'}`}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1 w-full">
-              <div className="space-y-1">
-                  <label className={`text-[9px] font-black uppercase ml-2 ${editingId ? 'text-indigo-100' : 'text-slate-500'}`}>Unit</label>
-                  <select className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-bold outline-none text-slate-900" onChange={(e) => setSelectedUnit(e.target.value)} value={selectedUnit}>
-                      <option value="">Select Unit...</option>
-                      {units.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-                  </select>
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => {
+                setActiveTab(item.id);
+                setMobileSidebarOpen(false);
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all text-sm font-bold ${
+                activeTab === item.id
+                  ? "bg-blue-600 text-white shadow-xl shadow-blue-100"
+                  : "text-slate-500 hover:bg-slate-50"
+              }`}
+            >
+              <span className="text-xl">{item.icon}</span>
+              {!collapsedSidebar && <span>{item.label}</span>}
+            </button>
+          ))}
+        </nav>
+
+        <div className="p-4 border-t border-slate-50">
+          <Logout />
+        </div>
+      </aside>
+
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+
+        <main className="flex-1 p-4 sm:p-6 md:p-10 lg:p-14 overflow-y-auto">
+        {/* Sticky Top-Left Mobile Trigger */}
+        <div className="lg:hidden flex items-center justify-between mb-6">
+            <button
+            onClick={() => setMobileSidebarOpen(true)}
+            className="sticky top-0 left-0 z-40 w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-xl shadow-md transition-transform active:scale-95"
+            aria-label="Open Menu"
+            >
+            <span className="text-xl">»</span>
+            </button>
+
+            <span className="text-sm font-bold text-slate-400 tracking-tight">
+            {orgData.name}
+            </span>
+        </div>
+
+        <div className="max-w-6xl mx-auto">
+          {activeTab === "overview" && (
+            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <header className="relative text-center mb-16 px-8 py-14 rounded-[3.5rem] bg-white border border-slate-200/50 shadow-[0_20px_50px_rgba(0,0,0,0.02)] max-w-4xl mx-auto">
+                <div className="absolute inset-0 -z-10 rounded-[3.5rem] ring-1 ring-slate-100 scale-[1.01]" />
+                <div className="absolute inset-0 -z-10 rounded-[3.5rem] ring-[18px] ring-slate-50/40 scale-[1.04] blur-sm" />
+                <div className="absolute inset-0 -z-10 rounded-[3.5rem] ring-[36px] ring-blue-50/15 scale-[1.08] blur-2xl" />
+
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black tracking-widest border border-emerald-100/50 mb-6 uppercase shadow-sm">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  {orgData.name} — System Live
+                </div>
+
+                <h1 className="text-4xl sm:text-6xl font-black text-slate-900 tracking-tight mb-4">
+                  System{" "}
+                  <span className="bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent">
+                    Analytics
+                  </span>
+                </h1>
+
+                <p className="text-slate-500 text-base sm:text-lg max-w-xl mx-auto leading-relaxed font-medium">
+                  Visualizing your radiography portal's health and content distribution.
+                </p>
+              </header>
+
+              <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm">
+                <h3 className="text-lg font-bold mb-8 text-slate-800 uppercase tracking-widest text-[11px]">
+                  Content Distribution
+                </h3>
+                <div className="w-full h-[320px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={chartData}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis
+                        dataKey="name"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: "#94a3b8", fontSize: 12, fontWeight: 700 }}
+                        dy={10}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: "#94a3b8", fontSize: 12 }}
+                      />
+                      <Tooltip
+                        cursor={{ fill: "#f8fafc" }}
+                        contentStyle={{
+                          borderRadius: "20px",
+                          border: "none",
+                          boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
+                        }}
+                      />
+                      <Bar dataKey="value" radius={[12, 12, 0, 0]} barSize={50}>
+                        {chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
-              <div className="space-y-1">
-                  <label className={`text-[9px] font-black uppercase ml-2 ${editingId ? 'text-indigo-100' : 'text-slate-500'}`}>Lecturer</label>
-                  <select className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-bold outline-none text-slate-900" onChange={(e) => setSelectedTeacher(e.target.value)} value={selectedTeacher}>
-                      <option value="">Select Lecturer...</option>
-                      {teachers.map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
-                  </select>
-              </div>
-              <div className="space-y-1">
-                  <label className={`text-[9px] font-black uppercase ml-2 ${editingId ? 'text-indigo-100' : 'text-slate-500'}`}>Room</label>
-                  <input type="text" placeholder="Room #" className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-bold outline-none text-slate-900" onChange={(e) => setRoomName(e.target.value)} value={roomName} />
-              </div>
-          </div>
-          <button 
-              onClick={editingId ? handleExecuteUpdate : () => {}}
-              className={`px-8 py-3.5 font-black text-[10px] tracking-widest rounded-xl transition-all border-b-2 ${editingId ? 'bg-white text-indigo-700 border-indigo-300' : 'bg-slate-900 text-white border-slate-700 hover:bg-blue-700'}`}
-          >
-              {editingId ? (isProcessing ? "SAVING..." : "UPDATE") : "READY"}
-          </button>
-      </div>
 
-      {/* 3. TIMETABLE GRID */}
-      <div className="bg-white rounded-[1.5rem] border-2 border-slate-200 shadow-lg overflow-hidden border-b-8 border-b-slate-300">
-          <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                  <thead>
-                      <tr className="bg-slate-800">
-                          <th className="p-4 text-left text-[10px] font-black text-white uppercase border-r border-slate-700">Day</th>
-                          {TIME_SLOTS.map(s => <th key={s.label} className="p-4 text-center text-[10px] font-black text-white border-r border-slate-700 last:border-none">{s.label}</th>)}
-                      </tr>
-                  </thead>
-                  <tbody>
-                      {DAYS.map(day => (
-                          <tr key={day} className="border-b border-slate-200 last:border-none">
-                              <td className="p-4 text-[10px] font-black text-slate-900 bg-slate-50 border-r-2 border-slate-200 uppercase">{day.slice(0,3)}</td>
-                              {TIME_SLOTS.map(slot => {
-                                  const alloc = allocations.find(a => a.day_of_week === day && a.start_time === slot.label && a.units?.year === currentYear && a.units?.semester === currentSemester);
-                                  if (slot.isBreak) return <td key={slot.label} className="p-1 bg-slate-100 border-r border-slate-200 text-center"><span className="rotate-[-90deg] inline-block text-[8px] font-black text-slate-400 tracking-tighter">{slot.title}</span></td>;
-                                  return (
-                                      <td key={slot.label} onClick={() => !alloc && handleAllocate(day, slot.label)} className={`p-1.5 min-w-[150px] border-r border-slate-100 last:border-none relative ${!alloc ? "cursor-crosshair hover:bg-blue-50" : ""}`}>
-                                          {alloc ? (
-                                              <div onClick={(e) => { e.stopPropagation(); startEditing(alloc); }} className={`p-3 rounded-xl transition-all shadow-sm min-h-[85px] flex flex-col justify-center border-b-2 ${editingId === alloc.id ? 'bg-indigo-600 text-white border-indigo-800 ring-2 ring-indigo-200' : 'bg-slate-900 text-white border-slate-700 hover:bg-slate-800'}`}>
-                                                  <p className="text-[10px] font-black leading-tight mb-1 uppercase line-clamp-2">{alloc.units?.name}</p>
-                                                  <p className={`text-[8px] font-bold uppercase truncate ${editingId === alloc.id ? 'text-indigo-100' : 'text-blue-300'}`}>{alloc.teachers?.full_name}</p>
-                                                  <p className="mt-1 text-[8px] font-black text-slate-400 uppercase tracking-tighter italic">{alloc.room_name}</p>
-                                              </div>
-                                          ) : <div className="h-16 flex items-center justify-center border border-dashed border-slate-200 bg-slate-50/30 rounded-xl"><span className="text-[8px] font-black text-slate-200 uppercase tracking-widest">Available</span></div>}
-                                      </td>
-                                  );
-                              })}
-                          </tr>
-                      ))}
-                  </tbody>
-              </table>
-          </div>
-      </div>
-
-      {/* 4. MANAGEMENT LIST */}
-      <div className="bg-white rounded-[1.5rem] border-2 border-slate-200 shadow-md overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
-              <h3 className="text-[11px] font-black text-slate-900 uppercase">Active Allocations</h3>
-
-              <div className="flex items-center gap-3 w-full md:w-auto">
-                <select 
-                  className="bg-white p-2.5 rounded-lg border border-slate-200 text-[10px] font-black text-slate-900 outline-none w-full md:w-48 shadow-sm"
-                  value={filterTeacher}
-                  onChange={(e) => setFilterTeacher(e.target.value)}
-                >
-                  <option value="">All Lecturers</option>
-                  {teachers.map(t => (
-                    <option key={t.id} value={t.full_name}>{t.full_name}</option>
-                  ))}
-                </select>
-
-                <button 
-                  onClick={handlePublish}
-                  disabled={isPublishing}
-                  className="px-6 py-2.5 bg-emerald-600 text-white text-[10px] font-black rounded-lg uppercase tracking-widest border-b-2 border-emerald-800 hover:bg-emerald-700 disabled:bg-slate-200 transition-all shadow-md"
-                >
-                  {isPublishing ? "SENDING..." : "PUBLISH TIMETABLE"}
-                </button>
-              </div>
-          </div>
-          
-          <div className="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 bg-white">
-              {allocations
-                .filter(a => a.units?.year === currentYear && a.units?.semester === currentSemester)
-                .filter(a => filterTeacher === "" || a.teachers?.full_name === filterTeacher)
-                .map(a => (
-                  <div key={a.id} className={`p-4 rounded-xl border-2 transition-all ${editingId === a.id ? 'bg-indigo-50 border-indigo-400 ring-2 ring-indigo-100' : 'bg-slate-50 border-slate-200 hover:border-slate-400'}`}>
-                      <div className="flex justify-between items-center mb-2">
-                          <span className="text-[8px] font-black px-2 py-0.5 bg-slate-800 text-white rounded uppercase">{a.day_of_week.slice(0,3)} {a.start_time}</span>
-                          <div className="flex gap-3">
-                              <button onClick={() => startEditing(a)} className="text-[9px] font-black text-indigo-700 hover:scale-110 transition-transform uppercase">Edit</button>
-                              <button onClick={() => handleSilentDelete(a.id)} className="text-[9px] font-black text-rose-600 hover:scale-110 transition-transform uppercase">Del</button>
-                          </div>
-                      </div>
-                      <p className="text-[10px] font-black text-slate-900 leading-tight uppercase line-clamp-1">{a.units?.name}</p>
-                      <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">{a.teachers?.full_name}</p>
-                      <p className="mt-1 text-[8px] font-black text-slate-400 uppercase tracking-widest italic">{a.room_name}</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
+                {[
+                  { label: "Active Users", value: stats.activeUsers, color: "text-emerald-600", bg: "bg-emerald-50" },
+                  { label: "Total Notes", value: stats.notes, color: "text-blue-600", bg: "bg-blue-50" },
+                  { label: "Past Papers", value: stats.papers, color: "text-purple-600", bg: "bg-purple-50" },
+                  { label: "Projections", value: stats.modules, color: "text-orange-600", bg: "bg-orange-50" },
+                  { label: "Assignments", value: stats.assignments, color: "text-pink-600", bg: "bg-pink-50" },
+                  { label: "Announcements", value: stats.announcements, color: "text-indigo-600", bg: "bg-indigo-50" },
+                ].map((s) => (
+                  <div
+                    key={s.label}
+                    className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                  >
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
+                      {s.label}
+                    </p>
+                    <p className={`text-5xl font-black ${s.color}`}>{s.value}</p>
                   </div>
-              ))}
-          </div>
-      </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "planner" && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+              <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <h3 className="text-xl font-black text-slate-900 mb-6 tracking-tight">
+                  Lecturer Onboarding
+                </h3>
+                <form
+                  onSubmit={handleTeacherEnroll}
+                  className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                >
+                  <input
+                    type="text"
+                    placeholder="Full Name"
+                    value={teacherForm.full_name}
+                    className="p-4 rounded-2xl bg-slate-50 border-none text-sm font-bold outline-none"
+                    onChange={(e) => setTeacherForm({ ...teacherForm, full_name: e.target.value })}
+                    required
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email Address"
+                    value={teacherForm.email}
+                    className="p-4 rounded-2xl bg-slate-50 border-none text-sm font-bold outline-none"
+                    onChange={(e) => setTeacherForm({ ...teacherForm, email: e.target.value })}
+                    required
+                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Department"
+                      value={teacherForm.department}
+                      className="flex-1 p-4 rounded-2xl bg-slate-50 border-none text-sm font-bold outline-none"
+                      onChange={(e) => setTeacherForm({ ...teacherForm, department: e.target.value })}
+                      required
+                    />
+                    <button className="px-6 bg-blue-600 text-white font-bold rounded-2xl text-xs hover:bg-blue-700">
+                      ENROLL
+                    </button>
+                  </div>
+                </form>
+              </div>
+              <AllocationBoard />
+            </div>
+          )}
+          
+          {activeTab === "billing" && (
+            <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm animate-in fade-in duration-500">
+              <h2 className="text-3xl font-black mb-6">Subscription Management</h2>
+              <div className="p-6 bg-blue-50 rounded-2xl border border-blue-100 mb-8">
+                <p className="text-sm font-bold text-blue-800">
+                  Current Plan: <span className="uppercase">{orgData.plan}</span>
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  Your organization is currently on the {orgData.plan} tier.
+                </p>
+              </div>
+              <button className="px-8 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all">
+                Upgrade to Enterprise
+              </button>
+            </div>
+          )}
+
+          {activeTab === "students" && (
+            <section className="animate-in fade-in duration-500">
+              <AddStudentSection />
+            </section>
+          )}
+
+          {activeTab === "upload-files" && (
+            <section className="animate-in fade-in duration-500">
+              <UploadFileSection
+                files={files}
+                setFiles={setFiles}
+                image={image}
+                setImage={setImage}
+                category={category}
+                setCategory={setCategory}
+                year={year}
+                setYear={setYear}
+                semester={semester}
+                setSemester={setSemester}
+                unitName={unitName}
+                setUnitName={setUnitName}
+                module={module}
+                setModule={setModule}
+                isUploading={isUploading}
+                handleUpload={handleUpload}
+                uploadProgress={uploadProgress}
+              />
+            </section>
+          )}
+
+          {activeTab === "links" && (
+            <section className="animate-in fade-in duration-500">
+              <AddLinkSection
+                linkData={linkData}
+                setLinkData={setLinkData}
+                handleLinkSubmit={async (e: React.FormEvent) => {
+                  e.preventDefault();
+                  const res = await fetch("/api/add-link", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(linkData),
+                  });
+                  if ((await res.json()).success) {
+                    showToast("Link added! ✅");
+                    setLinkData({ name: "", url: "", category: "" });
+                    await logActivity(`Added link: ${linkData.name}`);
+                  }
+                }}
+              />
+            </section>
+          )}
+
+          {activeTab === "assignments" && (
+            <section className="animate-in fade-in duration-500">
+              <UploadAssignmentSection />
+            </section>
+          )}
+          {activeTab === "announcements" && (
+            <section className="animate-in fade-in duration-500">
+              <PostAnnouncementSection />
+            </section>
+          )}
+          {activeTab === "recurring" && (
+            <section className="animate-in fade-in duration-500">
+              <RecurringAnnouncementSection />
+            </section>
+          )}
+          {activeTab === "edit-announce" && (
+            <section className="animate-in fade-in duration-500">
+              <EditAnnouncementSection />
+            </section>
+          )}
+
+          {activeTab === "delete-items" && (
+            <div className="grid md:grid-cols-2 gap-10 animate-in fade-in duration-500">
+              <DeleteFileSection handleFileDelete={handleFileDelete} />
+              <DeleteLinkSection links={links} handleLinkDelete={handleLinkDelete} />
+              <DeleteAnnouncementSection />
+              <DeleteAssignmentSection />
+            </div>
+          )}
+        </div>
+      </main>
+
+      <Toast message={toast} />
+      <ReturnToTop />
     </div>
   );
 }
