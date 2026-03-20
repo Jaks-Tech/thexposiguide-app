@@ -449,51 +449,56 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {activeTab === "planner" && (
-            <div className="space-y-10 animate-in fade-in duration-500">
-              <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                <h3 className="text-xl font-black text-slate-900 mb-6 tracking-tight">
-                  Lecturer Onboarding
+            {activeTab === "planner" && (
+            <div className="space-y-8 md:space-y-10 animate-in fade-in duration-500">
+                <div className="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <h3 className="text-lg md:text-xl font-black text-slate-900 mb-5 md:mb-6 tracking-tight">
+                    Lecturer Onboarding
                 </h3>
                 <form
-                  onSubmit={handleTeacherEnroll}
-                  className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                    onSubmit={handleTeacherEnroll}
+                    /* Tablet optimization: 2 columns on small tablets (sm), 3 columns on desktops (lg) */
+                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
                 >
-                  <input
+                    <input
                     type="text"
                     placeholder="Full Name"
                     value={teacherForm.full_name}
-                    className="p-4 rounded-2xl bg-slate-50 border-none text-sm font-bold outline-none"
+                    className="p-4 rounded-2xl bg-slate-50 border-none text-sm font-bold outline-none w-full focus:ring-2 focus:ring-blue-100 transition-all"
                     onChange={(e) => setTeacherForm({ ...teacherForm, full_name: e.target.value })}
                     required
-                  />
-                  <input
+                    />
+                    <input
                     type="email"
                     placeholder="Email Address"
                     value={teacherForm.email}
-                    className="p-4 rounded-2xl bg-slate-50 border-none text-sm font-bold outline-none"
+                    className="p-4 rounded-2xl bg-slate-50 border-none text-sm font-bold outline-none w-full focus:ring-2 focus:ring-blue-100 transition-all"
                     onChange={(e) => setTeacherForm({ ...teacherForm, email: e.target.value })}
                     required
-                  />
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Department"
-                      value={teacherForm.department}
-                      className="flex-1 p-4 rounded-2xl bg-slate-50 border-none text-sm font-bold outline-none"
-                      onChange={(e) => setTeacherForm({ ...teacherForm, department: e.target.value })}
-                      required
                     />
-                    <button className="px-6 bg-blue-600 text-white font-bold rounded-2xl text-xs hover:bg-blue-700">
-                      ENROLL
+                    {/* Tablet optimization: Full width on sm, back to 1/3 width on lg */}
+                    <div className="flex gap-2 sm:col-span-2 lg:col-span-1">
+                    <input
+                        type="text"
+                        placeholder="Department"
+                        value={teacherForm.department}
+                        className="flex-1 p-4 rounded-2xl bg-slate-50 border-none text-sm font-bold outline-none focus:ring-2 focus:ring-blue-100 transition-all"
+                        onChange={(e) => setTeacherForm({ ...teacherForm, department: e.target.value })}
+                        required
+                    />
+                    <button className="px-8 bg-blue-600 text-white font-bold rounded-2xl text-xs hover:bg-blue-700 transition-all active:scale-95 shadow-md shadow-blue-100">
+                        ENROLL
                     </button>
-                  </div>
+                    </div>
                 </form>
-              </div>
-              <AllocationBoard />
+                </div>
+                
+                <div className="w-full overflow-x-auto rounded-3xl">
+                <AllocationBoard />
+                </div>
             </div>
-          )}
-          
+            )}
+            
           {activeTab === "billing" && (
             <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm animate-in fade-in duration-500">
               <h2 className="text-3xl font-black mb-6">Subscription Management</h2>
