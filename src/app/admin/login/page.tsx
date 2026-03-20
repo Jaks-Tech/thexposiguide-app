@@ -81,7 +81,7 @@ export default function AdminLogin() {
         )}
 
         <p className="text-xs text-center text-gray-500 mt-4">
-          © {new Date().getFullYear()} The XPosiGuide — Admin Access Only
+          © {new Date().getFullYear()} The XPosiGuide - Admin Access Only
         </p>
       </div>
     </main>

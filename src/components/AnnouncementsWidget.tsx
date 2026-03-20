@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
 
 interface Announcement {
   id: string;
@@ -10,18 +11,16 @@ interface Announcement {
   end_time: string;
   repeat_rule?: string | null;
   type?: string;
+  link?: string; // 🔥 NEW (for navigation)
 }
 
 /* -------------------------------------------
-   CATEGORY DETECTOR (✨ NEW FEATURE)
+   CATEGORY DETECTOR
 ------------------------------------------- */
 function getCategory(a: Announcement) {
   const t = a.title.toLowerCase();
 
   if (a.type === "assignment")
-    return { icon: "📂", gradient: "from-purple-500 to-pink-400" };
-
-  if (t.includes("assignment"))
     return { icon: "📂", gradient: "from-purple-500 to-pink-400" };
 
   if (t.includes("exam"))
@@ -43,30 +42,31 @@ export default function AnnouncementsWidget() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(new Date());
+  const router = useRouter();
 
-  /* Live Updating Clock */
+  /* Live Clock */
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  /* Load announcements + assignments */
+  /* Load data */
   useEffect(() => {
     async function loadAll() {
       try {
-        // 1️⃣ Fetch existing announcements
+        // 🔹 1. Fetch announcements (API)
         const res = await fetch("/api/announcements/active?includeUpcoming=true");
         const data = await res.json();
 
-        const baseAnnouncements = [
+        const baseAnnouncements: Announcement[] = [
           ...(data.active || []),
           ...(data.upcoming || []),
-        ] as Announcement[];
+        ];
 
-        // 2️⃣ Fetch assignments from Supabase
+        // 🔹 2. Fetch assignments (Supabase)
         const { data: assignments } = await supabase
           .from("assignments")
-          .select("id, title, deadline, created_at");
+          .select("id, title, deadline, unit_name, created_at");
 
         let assignmentAnnouncements: Announcement[] = [];
 
@@ -74,39 +74,40 @@ export default function AnnouncementsWidget() {
           assignmentAnnouncements = assignments.map((a) => ({
             id: `assignment-${a.id}`,
             title: a.title,
-            message: "New assignment available",
-            start_time: new Date().toISOString(),
-            end_time: a.deadline || new Date(Date.now() + 86400000).toISOString(),
-            repeat_rule: null,
+            message: `New assignment for ${a.unit_name || "your unit"}`,
+            start_time: a.created_at || new Date().toISOString(),
+            end_time:
+              a.deadline ||
+              new Date(Date.now() + 86400000).toISOString(),
             type: "assignment",
+            link: "/assignments", // 🔥 clickable
           }));
         }
 
-        // 3️⃣ Merge everything together
+        // 🔹 3. Merge
         const merged = [...assignmentAnnouncements, ...baseAnnouncements];
 
-        // 4️⃣ Sort by newest first
+        // 🔹 4. Sort
         merged.sort(
           (a, b) =>
-            new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
+            new Date(b.start_time).getTime() -
+            new Date(a.start_time).getTime()
         );
 
         setAnnouncements(merged);
       } catch (err) {
-        console.error("❌ Announcement load error:", err);
+        console.error("❌ Load error:", err);
       } finally {
         setLoading(false);
       }
     }
 
     loadAll();
-    const interval = setInterval(loadAll, 60_000); // refresh every minute
+    const interval = setInterval(loadAll, 60_000);
     return () => clearInterval(interval);
   }, []);
 
-  /* -------------------------------------------
-     Countdown formatter
-  ------------------------------------------- */
+  /* Countdown */
   const formatCountdown = (endTime: string) => {
     const diff = new Date(endTime).getTime() - now.getTime();
     if (diff <= 0) return "Expired";
@@ -120,44 +121,36 @@ export default function AnnouncementsWidget() {
       .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  /* -------------------------------------------
-     Auto-remove expired items
-  ------------------------------------------- */
+  /* Remove expired */
   useEffect(() => {
-    const filtered = announcements.filter((a) => new Date(a.end_time) > now);
-    if (filtered.length !== announcements.length) {
-      setAnnouncements(filtered);
-    }
-  }, [now, announcements]);
+    setAnnouncements((prev) =>
+      prev.filter((a) => new Date(a.end_time) > now)
+    );
+  }, [now]);
 
-  /* -------------------------------------------
-     LOADING STATE
-  ------------------------------------------- */
+  /* Loading */
   if (loading) {
     return (
       <div className="w-full max-w-4xl mx-auto text-center p-6 bg-blue-50 border border-blue-200 rounded-2xl shadow-sm">
-        <p className="text-blue-600 animate-pulse">Loading announcements...</p>
+        <p className="text-blue-600 animate-pulse">Loading updates...</p>
       </div>
     );
   }
 
-  /* -------------------------------------------
-     EMPTY STATE
-  ------------------------------------------- */
+  /* Empty */
   if (announcements.length === 0) {
     return (
       <div className="w-full max-w-4xl mx-auto text-center p-6 bg-neutral-50 border border-neutral-200 rounded-2xl shadow-sm">
-        <p className="text-neutral-500">No active announcements right now 🎉</p>
+        <p className="text-neutral-500">No updates right now 🎉</p>
       </div>
     );
   }
 
-  /* -------------------------------------------
-     RENDER ANNOUNCEMENTS
-  ------------------------------------------- */
+  /* Render */
   return (
     <div className="w-full max-w-5xl mx-auto mt-10 mb-14 px-4 sm:px-6 flex justify-center">
-      <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-2xl shadow-lg p-6 sm:p-8 relative overflow-hidden w-full max-w-4xl">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-2xl shadow-lg p-6 sm:p-8 w-full max-w-4xl">
+        
         <h2 className="text-2xl sm:text-3xl font-extrabold mb-6 text-center">
           💫 Highlights
         </h2>
@@ -170,23 +163,24 @@ export default function AnnouncementsWidget() {
             return (
               <div
                 key={a.id}
-                className={`
+                onClick={() => a.link && router.push(a.link)}
+                className="
+                  cursor-pointer
                   p-4 bg-white text-blue-800 rounded-xl shadow-md
                   hover:shadow-lg hover:-translate-y-1 transition
-                  flex flex-col justify-between
-                  h-[200px]
-                `}
+                  flex flex-col justify-between h-[200px]
+                "
               >
-                {/* Category Bar */}
-                <div
-                  className={`h-[4px] w-full rounded-full bg-gradient-to-r ${category.gradient} mb-3`}
-                />
+                {/* Category bar */}
+                <div className={`h-[4px] w-full rounded-full bg-gradient-to-r ${category.gradient} mb-3`} />
 
                 <h3 className="font-bold text-lg flex items-center gap-2 mb-1">
                   <span>{category.icon}</span> {a.title}
                 </h3>
 
-                <p className="text-sm text-neutral-600">{a.message}</p>
+                <p className="text-sm text-neutral-600 line-clamp-2">
+                  {a.message}
+                </p>
 
                 <div className="text-xs text-neutral-500 mt-2">
                   🕒 Until {new Date(a.end_time).toLocaleTimeString([], {

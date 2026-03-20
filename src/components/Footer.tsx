@@ -1,71 +1,128 @@
-// src/components/Footer.tsx
+"use client";
 import React from "react";
+import Link from "next/link";
 import { MdInfoOutline, MdArticle } from "react-icons/md";
-import { FaGithub } from "react-icons/fa";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
+  // Navigation Data
+  const sections = [
+    {
+      title: "Projections",
+      links: [
+        { name: "Upper Extremities", href: "/upper-extremities" },
+        { name: "Lower Extremities", href: "/lower-extremities" },
+        { name: "Pelvic Girdle", href: "/pelvic-girdle" },
+        { name: "Projections Studio", href: "/projections-studio" },
+      ],
+    },
+    {
+      title: "Learning Hub",
+      links: [
+        { name: "XPosiLearn", href: "/xposilearn" },
+        { name: "Assignments", href: "/assignments" },
+        { name: "Announcements", href: "/announcements" },
+        { name: "Game Retreat", href: "/games" },
+      ],
+    },
+    {
+      title: "Intelligence",
+      links: [
+        { name: "XPosi AI", href: "/xposi-ai" },
+        { name: "Chat-Your-PDF", href: "/pdf-ai" },
+        { name: "Revision Workspace", href: "/revision-workspace" },
+      ],
+    },
+  ];
+
   return (
-    /* mt-32 is REMOVED. pt-32 handles the space while keeping the background connected */
-    <footer className="relative pt-32 text-gray-400 overflow-hidden w-full">
-      
-      {/* 1. DARK BACKGROUND: Fills the entire footer area */}
+    <footer className="relative pt-32 text-gray-400 overflow-hidden w-full font-sans">
+      {/* --- BACKGROUND ELEMENTS --- */}
       <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-black to-black" />
-      
-      {/* 2. THE GLOW EFFECT: The large blue aura behind the content */}
       <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-600/20 blur-[140px] rounded-full pointer-events-none" />
-      
-      {/* 3. SUBTLE GRID: Pattern overlay */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:24px_24px] opacity-20 pointer-events-none" />
+      
+      {/* TOP ACCENT LINE */}
+      <div className="relative h-[2px] w-full bg-gradient-to-r from-transparent via-blue-500/40 to-transparent" />
 
-      {/* 4. TOP ACCENT LINE: Horizontal separator */}
-      <div className="relative h-[2px] w-full bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
-
-      <div className="relative max-w-6xl mx-auto px-6 py-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+      <div className="relative max-w-7xl mx-auto px-6 py-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 mb-20">
           
-          {/* LEFT SIDE */}
-          <div className="space-y-6">
-            <h3 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-gray-300 to-gray-500 bg-clip-text text-transparent">
-              The XPosiGuide
-            </h3>
-            <p className="text-sm text-gray-500 max-w-md leading-relaxed">
-              Advanced radiography education platform powered by AI-driven 
-              projection tools and intelligent document analysis.
-            </p>
+          {/* COLUMN 1: BRANDING */}
+          <div className="lg:col-span-4 space-y-8">
+            <div className="space-y-4">
+              <h3 className="text-3xl font-extrabold tracking-tighter bg-gradient-to-r from-white via-gray-300 to-gray-500 bg-clip-text text-transparent">
+                The XPosiGuide
+              </h3>
+              <p className="text-sm text-gray-500 max-w-sm leading-relaxed">
+                A specialized radiography ecosystem. We provide the tools and 
+                intelligence required for clinical excellence and academic mastery.
+              </p>
+            </div>
 
-            <div className="group flex gap-4 items-start max-w-md bg-white/5 backdrop-blur-xl p-5 rounded-2xl border border-white/10 transition-all duration-500 hover:border-blue-500/40 hover:shadow-[0_0_40px_rgba(59,130,246,0.15)]">
-              <MdInfoOutline className="text-blue-400 shrink-0" size={22} />
-              <div className="text-xs leading-relaxed italic">
-                <span className="text-gray-200 font-semibold block mb-2 tracking-wide">Clinical Disclaimer</span>
-                This platform is strictly for educational purposes. Always follow institutional protocols.
+            <div className="group flex gap-4 items-start max-w-sm bg-white/5 backdrop-blur-xl p-5 rounded-2xl border border-white/10 transition-all duration-500 hover:border-blue-500/40">
+              <MdInfoOutline className="text-blue-500 shrink-0" size={20} />
+              <div className="text-[11px] leading-relaxed italic text-gray-400">
+                <span className="text-gray-200 font-bold block mb-1 uppercase tracking-wider">Clinical Notice</span>
+                Strictly for educational use. Cross-reference all findings with local hospital protocols.
               </div>
             </div>
           </div>
 
-          {/* RIGHT SIDE */}
-          <div className="flex flex-col md:items-end gap-8">
-            <div className="flex gap-6 items-center">
-              <a href="https://github.com/Jaks-Tech" target="_blank" className="p-3 rounded-xl bg-white/5 border border-white/10 hover:border-blue-500/40 transition-all">
-                <FaGithub size={22} className="hover:text-blue-400 transition-colors" />
-              </a>
-              <a href="#" className="p-3 rounded-xl bg-white/5 border border-white/10 hover:border-blue-500/40 transition-all">
-                <MdArticle size={24} className="hover:text-blue-400 transition-colors" />
+          {/* COLUMNS 2, 3, 4: NAVIGATION MAP */}
+          <div className="lg:col-span-6 grid grid-cols-2 md:grid-cols-3 gap-10">
+            {sections.map((section) => (
+              <div key={section.title} className="space-y-6">
+                <h4 className="text-white font-bold text-xs tracking-[0.2em] uppercase">{section.title}</h4>
+                <ul className="space-y-3">
+                  {section.links.map((link) => (
+                    <li key={link.name}>
+                      <Link 
+                        href={link.href} 
+                        className="text-sm text-gray-500 hover:text-blue-400 transition-colors duration-200 block"
+                      >
+                        {link.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          {/* COLUMN 5: QUICK ACTIONS */}
+          <div className="lg:col-span-2 flex flex-col items-start lg:items-end gap-8">
+            <h4 className="text-white font-bold text-xs tracking-[0.2em] uppercase">Resources</h4>
+            <div className="flex gap-4">
+              <a href="/xposi-ai" className="flex items-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 hover:border-blue-500/40 transition-all group">
+                <MdArticle size={22} className="group-hover:text-blue-400 transition-colors" />
+                <span className="text-xs font-bold text-gray-300 pr-2">Past Papers</span>
               </a>
             </div>
-            <p className="text-[11px] tracking-[0.35em] uppercase text-gray-600 font-semibold">Precision in Positioning</p>
+            <div className="lg:text-right">
+              <p className="text-[10px] tracking-[0.3em] uppercase text-blue-500 font-black">
+                Precision in
+              </p>
+              <p className="text-[10px] tracking-[0.3em] uppercase text-gray-500 font-black">
+                Positioning
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* BOTTOM STRIP */}
-        <div className="mt-20 pt-10 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-6 text-xs">
-          <p className="text-gray-500">
-            © {currentYear} <span className="text-gray-300 font-medium">The XPosiGuide</span>. Built for Radiography Students and Practitioners.
-          </p>
-          <div className="flex gap-8 uppercase tracking-wide font-medium text-gray-500">
-            <a href="/" className="hover:text-white transition-colors">Privacy</a>
-            <a href="/" className="hover:text-white transition-colors">Terms</a>
+        {/* --- BOTTOM LEGAL STRIP --- */}
+        <div className="pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-6 text-[10px] font-bold text-gray-600 uppercase tracking-widest">
+            <p>© {currentYear} The XPosiGuide</p>
+            <span className="hidden md:block w-1.5 h-1.5 bg-blue-600/20 rounded-full" />
+            <p>Radiography Intelligence</p>
+          </div>
+          
+          <div className="flex gap-10 text-[10px] uppercase tracking-[0.2em] font-black text-gray-600">
+            <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
+            <Link href="/support" className="text-blue-600 hover:text-blue-400 transition-colors">Support</Link>
           </div>
         </div>
       </div>

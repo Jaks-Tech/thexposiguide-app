@@ -6,7 +6,7 @@ import { useState, useRef } from "react";
 import { FiChevronDown, FiMenu, FiX } from "react-icons/fi";
 import { FaFlask } from "react-icons/fa";
 import { GiHand, GiLeg, GiPelvisBone } from "react-icons/gi";
-import { MdMenuBook, MdHome, MdSportsEsports } from "react-icons/md";
+import { MdMenuBook, MdHome, MdSportsEsports, MdAssignment, MdCampaign } from "react-icons/md";
 import { PiRobotBold } from "react-icons/pi";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -157,7 +157,6 @@ function NavContent({ setIsMenuOpen }: { setIsMenuOpen: (o: boolean) => void }) 
         Home
       </NavItem>
 
-
       <Dropdown label="Explore Projections" icon={<GiPelvisBone size={18} />}>
         <div className="flex flex-col">
           <Link href="/upper-extremities" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50 transition-colors">
@@ -172,34 +171,52 @@ function NavContent({ setIsMenuOpen }: { setIsMenuOpen: (o: boolean) => void }) 
             <GiPelvisBone size={20} className="text-orange-600" /> 
             <span className="font-medium">Pelvic Girdle</span>
           </Link>
-          
+
+          <Link href="/projections-studio" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50 transition-colors">
+            <FaFlask size={20} className="text-orange-600" /> 
+            <span className="font-medium">Generate Projections</span>
+          </Link>
+
+         
           <Link href="/revision-workspace" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50 transition-colors">
             <MdMenuBook size={20} className="text-orange-600" /> 
-            <span className="font-medium">Generated-Projections</span>
+            <span className="font-medium">Check-Your-Projections</span>
           </Link>
         </div>
       </Dropdown>
 
-      <NavItem href="/projections-studio" icon={<FaFlask size={18} />} onClick={close}>
-        Generate Projections
-      </NavItem>
 
-      <Dropdown label="Learning Hub" icon={<MdMenuBook size={18} />}>
-        <div className="flex flex-col">
-          <Link href="/xposilearn" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50">
-            <MdMenuBook size={20} className="text-indigo-600" /> 
-            <span className="font-medium">XPosiLearn</span>
-          </Link>
-          <Link href="/xposi-ai" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50">
-            <PiRobotBold size={20} className="text-purple-600" /> 
-            <span className="font-medium">XPosi AI</span>
-          </Link>
-          <Link href="/pdf-ai" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50">
-            <PiRobotBold size={20} className="text-pink-600" /> 
-            <span className="font-medium">Chat-Your-PDF</span>
-          </Link>
-        </div>
-      </Dropdown>
+    <Dropdown label="Learning Hub" icon={<MdMenuBook size={18} />}>
+      <div className="flex flex-col">
+        
+            {/* --- New Grouped Section --- */}
+        <div className="border-t border-gray-100 my-1"></div>
+
+        <Link href="/assignments" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50">
+          <MdAssignment size={20} className="text-orange-500" /> 
+          <span className="font-medium">Assignments</span>
+        </Link>
+
+        <Link href="/announcements" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50">
+          <MdCampaign size={20} className="text-emerald-600" /> 
+          <span className="font-medium">Announcements</span>
+        </Link>
+        <Link href="/xposilearn" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50">
+          <MdMenuBook size={20} className="text-indigo-600" /> 
+          <span className="font-medium">XPosiLearn</span>
+        </Link>
+        <Link href="/xposi-ai" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50">
+          <PiRobotBold size={20} className="text-purple-600" /> 
+          <span className="font-medium">XPosi AI</span>
+        </Link>
+        <Link href="/pdf-ai" onClick={close} className="flex items-center gap-3 px-5 py-3 hover:bg-blue-50">
+          <PiRobotBold size={20} className="text-pink-600" /> 
+          <span className="font-medium">Chat-Your-PDF</span>
+        </Link>
+
+
+  </div>
+</Dropdown>
 
       <NavItem href="/games" icon={<MdSportsEsports size={18} />} onClick={close}>
         Game Retreat

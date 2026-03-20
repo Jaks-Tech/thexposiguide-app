@@ -16,44 +16,66 @@ export default function PDFPage() {
   }, []);
 
   return (
-    <div className="
-      w-full 
-      min-h-screen 
-      bg-white 
-      flex flex-col 
-      items-center 
-      pt-5 
-      pb-30
+<div className="
+  w-full 
+  min-h-screen 
+  bg-white 
+  flex flex-col 
+  items-center 
+  pt-10
+  pb-10
+">
+  {/* PAGE TITLE */}
+  <h1 className="
+    text-3xl 
+    sm:text-5xl 
+    font-black 
+    text-blue-700 
+    mb-6
+    text-center
+    tracking-tight
+  ">
+    Chat With Your Doc
+  </h1>
+
+  {/* CONTAINER CARD WITH FADED OUTLINE */}
+  <div className="
+    relative 
+    max-w-2xl 
+    mx-auto 
+    mb-10 
+    sm:mb-14 
+    px-6 
+    py-10 
+    sm:py-12 
+    rounded-[3rem] 
+    bg-white 
+    border border-slate-200/50 
+    shadow-[0_8px_40px_rgba(0,0,0,0.02)]
+  ">
+    {/* Faded Outline Glow Layers */}
+    <div className="absolute inset-0 -z-10 rounded-[3rem] ring-1 ring-slate-100 scale-[1.01]" />
+    <div className="absolute inset-0 -z-10 rounded-[3rem] ring-[12px] ring-slate-50/50 scale-[1.04] blur-sm" />
+    <div className="absolute inset-0 -z-10 rounded-[3rem] ring-[24px] ring-blue-50/20 scale-[1.08] blur-md" />
+
+    {/* DESCRIPTION — phone scalable */}
+    <p className="
+      text-slate-500 
+      text-sm 
+      sm:text-lg 
+      text-center 
+      max-w-md 
+      mx-auto 
+      px-4 
+      leading-relaxed
+      font-medium
     ">
+      Upload any PDF or Word file <span className="text-slate-400 font-normal">(notes, protocol, guideline)</span> and let our 
+      <span className="text-blue-600 font-bold"> PDF AI </span> 
+      extract key points, answer questions, and explain content - directly from your file.
+    </p>
+  </div>
 
-      {/* PAGE TITLE */}
-      <h1 className="
-        text-3xl 
-        sm:text-4xl 
-        font-bold 
-        text-blue-700 
-        mb-2
-        text-center
-      ">
-        Chat With Your Doc
-      </h1>
-
-      {/* DESCRIPTION — phone scalable */}
-      <p className="
-        text-slate-500 
-        text-sm 
-        sm:text-base 
-        text-center 
-        max-w-lg 
-        mx-auto 
-        px-4 
-        mb-6 
-        sm:mb-10
-        leading-relaxed
-      ">
-        Upload any PDF or Word file (notes, protocol, guideline) and let our PDF AI 
-        extract key points, answer questions, and explain content - directly from your file.
-      </p>
 
       {/* MAIN CHAT CARD */}
       <div className="

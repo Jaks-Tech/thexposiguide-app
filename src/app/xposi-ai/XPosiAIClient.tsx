@@ -238,65 +238,32 @@ export default function XPosiAIClient({ paperMeta }: { paperMeta: PaperMeta }) {
               ></div>
             </div>
 
-            {/* ========================= */}
-            {/* BEAUTIFUL FILLER CONTENT */}
-            {/* ========================= */}
-            {!answer && status !== "generating" && status !== "done" && (
-              <div className="mt-10 text-center text-blue-700">
+              {!answer && status !== "generating" && status !== "done" && (
+                <div className="mt-12 mb-8 text-center px-6">
+                  {/* Minimalist Icon */}
+                  <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-50 rounded-2xl mb-6">
+                    <span className="text-2xl">✨</span>
+                  </div>
 
-                {/* Animated Icon */}
-                <div className="flex justify-center mb-4">
-                  <div className="w-16 h-16 bg-blue-600/10 rounded-full flex items-center justify-center animate-pulse">
-                    <span className="text-3xl">✨</span>
+                  {/* Primary Message */}
+                  <h3 className="text-lg font-bold text-slate-900 mb-3">
+                    XPosi AI is Ready
+                  </h3>
+
+                  {/* The Simple Statement */}
+                  <p className="text-slate-600 text-sm max-w-sm mx-auto leading-relaxed">
+                    Upload <span className="font-semibold text-blue-600">non-scanned documents</span> for instant answers, 
+                    or switch to <span className="font-semibold text-indigo-600">Chat mode</span> to discuss scanned papers.
+                  </p>
+
+                  {/* Subtle visual divider */}
+                  <div className="mt-8 flex justify-center gap-1">
+                    <div className="h-1 w-1 bg-slate-200 rounded-full"></div>
+                    <div className="h-1 w-8 bg-slate-200 rounded-full"></div>
+                    <div className="h-1 w-1 bg-slate-200 rounded-full"></div>
                   </div>
                 </div>
-
-                {/* Heading */}
-                <h3 className="text-xl font-semibold mb-2">
-                  XPosi AI Is Ready To Assist
-                </h3>
-
-                {/* Description */}
-                <p className="text-sm text-neutral-600 max-w-sm mx-auto mb-6">
-                  Extract the text to begin generating structured, step-by-step answers.
-                  After extraction, switch to Chat mode to ask deeper questions.
-                </p>
-
-                {/* Feature Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto mt-6">
-
-                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl shadow-sm">
-                    <p className="text-blue-700 font-medium mb-1">🧠 Smart Extraction</p>
-                    <p className="text-xs text-neutral-600">
-                      Reads your paper and prepares the content for analysis.
-                    </p>
-                  </div>
-
-                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl shadow-sm">
-                    <p className="text-blue-700 font-medium mb-1">📘 AI Answers</p>
-                    <p className="text-xs text-neutral-600">
-                      Generates clean, structured answers mapped to your questions.
-                    </p>
-                  </div>
-
-                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl shadow-sm">
-                    <p className="text-blue-700 font-medium mb-1">💬 Chat Mode</p>
-                    <p className="text-xs text-neutral-600">
-                      Ask follow-up questions and get clarifications anytime.
-                    </p>
-                  </div>
-
-                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl shadow-sm">
-                    <p className="text-blue-700 font-medium mb-1">📂 File Support</p>
-                    <p className="text-xs text-neutral-600">
-                      Works with PDF, Word, PowerPoint, and images.
-                    </p>
-                  </div>
-
-                </div>
-
-              </div>
-            )}
+              )}
 
             {/* ========================= */}
             {/* Buttons */}

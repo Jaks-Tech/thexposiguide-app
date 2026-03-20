@@ -151,7 +151,7 @@ export default function HomePage() {
             {/* Subtitle */}
             <p className="text-white/80 max-w-2xl mx-auto text-lg mb-16">
               A smooth guided pathway through all modules, projections, learning tools, 
-              and AI assistance — designed to build strong diagnostic confidence.
+              and AI assistance - designed to build strong diagnostic confidence.
             </p>
 
             {/* Circular Roadmap */}
@@ -321,17 +321,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* -------------------------------------------------- */}
-      {/* 7️⃣ FOOTER — WHITE */}
-      {/* -------------------------------------------------- */}
-      <footer className="w-full bg-white border-t border-neutral-200 py-10 text-sm text-neutral-500">
-        <div className="max-w-7xl mx-auto px-6">
-          <p>
-            <strong>Disclaimer:</strong> For educational purposes only. Always
-            follow institutional protocols.
-          </p>
-        </div>
-      </footer>
     </main>
   );
 }
