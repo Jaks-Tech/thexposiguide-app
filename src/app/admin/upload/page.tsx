@@ -61,6 +61,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("overview");
   const [collapsedSidebar, setCollapsedSidebar] = useState(false);
+  const [chartReady, setChartReady] = useState(false);
 
   /* ---------------- SAAS STATE ---------------- */
   const [orgData, setOrgData] = useState({ name: "Loading...", plan: "Free" });
@@ -68,6 +69,8 @@ export default function AdminDashboard() {
 
   /* ---------------- AUTH ---------------- */
   useEffect(() => {
+    setChartReady(true);
+
     const isAuth = localStorage.getItem("admin-auth");
     if (!isAuth) {
       router.push("/admin/login");
@@ -391,40 +394,42 @@ export default function AdminDashboard() {
                 <h3 className="text-lg font-bold mb-8 text-slate-800 uppercase tracking-widest text-[11px]">
                   Content Distribution
                 </h3>
-                <div className="w-full h-[320px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={chartData}
-                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis
-                        dataKey="name"
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: "#94a3b8", fontSize: 12, fontWeight: 700 }}
-                        dy={10}
-                      />
-                      <YAxis
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: "#94a3b8", fontSize: 12 }}
-                      />
-                      <Tooltip
-                        cursor={{ fill: "#f8fafc" }}
-                        contentStyle={{
-                          borderRadius: "20px",
-                          border: "none",
-                          boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
-                        }}
-                      />
-                      <Bar dataKey="value" radius={[12, 12, 0, 0]} barSize={50}>
-                        {chartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="w-full min-w-0 h-[320px]">
+                  {chartReady && (
+                    <ResponsiveContainer width="100%" height={320}>
+                      <BarChart
+                        data={chartData}
+                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis
+                          dataKey="name"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: "#94a3b8", fontSize: 12, fontWeight: 700 }}
+                          dy={10}
+                        />
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: "#94a3b8", fontSize: 12 }}
+                        />
+                        <Tooltip
+                          cursor={{ fill: "#f8fafc" }}
+                          contentStyle={{
+                            borderRadius: "20px",
+                            border: "none",
+                            boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
+                          }}
+                        />
+                        <Bar dataKey="value" radius={[12, 12, 0, 0]} barSize={50}>
+                          {chartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
               </div>
 

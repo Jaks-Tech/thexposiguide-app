@@ -1,15 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LocationStatus from "@/components/attendance/LocationStatus";
 
 export default function VerifyPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-center">Checking location...</div>}>
+      <VerifyContent />
+    </Suspense>
+  );
+}
+
+function VerifyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const sessionId = searchParams.get("session");
-  const code = searchParams.get("code"); // or store from previous step
+  const code = searchParams.get("code");
 
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("Checking location...");
@@ -38,22 +46,21 @@ export default function VerifyPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setMessage(`❌ ${data.error || "Validation failed"}`);
+        setMessage(data.error || "Validation failed");
         setLoading(false);
         return;
       }
 
-      // ✅ SUCCESS → MOVE TO FORM
       router.push(`/attendance/form?session=${sessionId}`);
     } catch (err) {
       console.error(err);
-      setMessage("❌ Network error");
+      setMessage("Network error");
       setLoading(false);
     }
   };
 
-  if (!sessionId) {
-    return <p className="text-red-500">Invalid session</p>;
+  if (!sessionId || !code) {
+    return <p className="p-6 text-center text-red-500">Invalid attendance link</p>;
   }
 
   return (
@@ -61,6 +68,11 @@ export default function VerifyPage() {
       <LocationStatus onLocationReady={handleLocationReady} />
 
       <p className="mt-4 text-sm text-gray-600">{message}</p>
+      {loading && (
+        <p className="mt-2 text-xs text-gray-400">
+          Please keep this page open.
+        </p>
+      )}
     </div>
   );
 }
