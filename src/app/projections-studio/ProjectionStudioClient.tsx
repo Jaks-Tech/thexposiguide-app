@@ -1,86 +1,177 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { GiHand, GiLeg, GiPelvisBone } from "react-icons/gi";
 import { PiSparkleBold } from "react-icons/pi";
+import { WandSparkles, ImagePlus, ChevronRight } from "lucide-react";
+
 import GenerateProjectionRealtime from "@/components/GenerateProjectionRealtime";
+import ProjectionVisualCreator from "@/components/ProjectionVisualCreator";
+
+type ModuleType = "upper" | "lower" | "pelvic";
+type ToolType = "lesson" | "visual";
 
 export default function ProjectionStudioClient() {
   const searchParams = useSearchParams();
-  const module =
-    (searchParams.get("module") as "upper" | "lower" | "pelvic") || "upper";
+  const router = useRouter();
+
+  const selectedModule = (searchParams.get("module") as ModuleType) || "upper";
+  const [selectedTool, setSelectedTool] = useState<ToolType>("lesson");
 
   const modules = [
-    { key: "upper", label: "Upper", icon: <GiHand size={18} /> },
-    { key: "lower", label: "Lower", icon: <GiLeg size={18} /> },
-    { key: "pelvic", label: "Pelvic", icon: <GiPelvisBone size={18} /> },
+    { key: "upper", label: "Upper", icon: <GiHand /> },
+    { key: "lower", label: "Lower", icon: <GiLeg /> },
+    { key: "pelvic", label: "Pelvic", icon: <GiPelvisBone /> },
+  ];
+
+  const tools = [
+    {
+      key: "lesson" as const,
+      label: "Textual Projection Generator",
+      description: "Structured positioning notes",
+      icon: <WandSparkles size={20} />,
+      color: "blue",
+    },
+    {
+      key: "visual" as const,
+      label: "Visual Projections",
+      description: "Create projection visuals",
+      icon: <ImagePlus size={20} />,
+      color: "cyan",
+    },
   ];
 
   return (
-    <div className="relative min-h-screen px-2 sm:px-6 lg:px-8 py-8 sm:py-16">
+    <div className="relative min-h-screen overflow-hidden px-4 sm:px-6 lg:px-8 py-12 bg-[#fcfdfe]">
+      {/* Dynamic Background Elements */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-100/50 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-100/40 rounded-full blur-[120px]" />
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03]" />
+      </div>
 
-      {/* Soft background glow */}
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.08),transparent_50%)]" />
-
-      <div className="w-full max-w-6xl mx-auto">
-
-        <div className="border border-slate-200 rounded-2xl sm:rounded-3xl shadow-lg bg-white/70 backdrop-blur-xl p-5 sm:p-12">
-
-          {/* HERO */}
+      <div className="w-full max-w-5xl mx-auto">
+        {/* Header Section */}
+        <header className="relative text-center mb-12">
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="text-center mb-10 sm:mb-14"
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 shadow-sm mb-6"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] sm:text-xs font-medium mb-4">
-              <PiSparkleBold size={14} />
-              Powered by XPosi AI
-            </div>
-
-            <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-blue-700">
-              Projection Studio
-            </h1>
-
-            <p className="mt-3 sm:mt-4 text-sm sm:text-lg text-gray-600 max-w-2xl mx-auto px-2">
-              Instantly generate radiographic projections with structured
-              positioning steps, anatomy landmarks, and exposure guidance.
-            </p>
+            <PiSparkleBold className="text-blue-600" size={14} />
+            <span className="text-[10px] uppercase tracking-widest font-bold text-slate-500">
+              XPosi AI Intelligence
+            </span>
           </motion.div>
 
+          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900 mb-4">
+            Projection <span className="text-blue-600">Studio</span>
+          </h1>
+          <p className="text-slate-500 max-w-xl mx-auto text-base sm:text-lg font-medium leading-relaxed">
+            High-fidelity radiographic positioning tools and 
+            automated lesson planning in one workspace.
+          </p>
+        </header>
 
-          {/* MODULE SELECTOR - Scrollable on very small screens */}
-          <div className="flex justify-center mb-8 sm:mb-10">
-            <div className="flex flex-wrap sm:flex-nowrap justify-center gap-2 sm:gap-3 bg-white border rounded-xl sm:rounded-2xl p-1.5 sm:p-2 shadow-sm">
-              {modules.map((m) => (
-                <a
-                  key={m.key}
-                  href={`?module=${m.key}`}
-                  className={`flex items-center gap-2 px-3 sm:px-5 py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all ${
-                    module === m.key
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "hover:bg-gray-100 text-gray-600"
-                  }`}
-                >
-                  {m.icon}
-                  <span>{m.label}</span>
-                </a>
-              ))}
+        {/* Main Interface Card */}
+        <div className="relative border border-slate-200/60 rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] bg-white/80 backdrop-blur-xl overflow-hidden">
+          {/* Module Segmented Control */}
+          <div className="flex justify-center pt-8 pb-4">
+            <div className="inline-flex p-1.5 bg-slate-100/80 rounded-2xl border border-slate-200">
+              {modules.map((m) => {
+                const isActive = selectedModule === m.key;
+                return (
+                  <button
+                    key={m.key}
+                    onClick={() => router.push(`?module=${m.key}`)}
+                    className={`relative flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                      isActive ? "text-blue-700" : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeModule"
+                        className="absolute inset-0 bg-white shadow-sm rounded-xl border border-slate-200/50"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    <span className="relative z-10 text-lg">{m.icon}</span>
+                    <span className="relative z-10">{m.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* GENERATOR */}
-          <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl shadow-md p-4 sm:p-10">
-            <GenerateProjectionRealtime module={module} />
+          <div className="px-6 pb-10 sm:px-12">
+            {/* Tool Selection Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10 max-w-3xl mx-auto">
+              {tools.map((tool) => {
+                const isActive = selectedTool === tool.key;
+                return (
+                  <motion.button
+                    key={tool.key}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setSelectedTool(tool.key)}
+                    className={`relative group text-left p-5 rounded-3xl border-2 transition-all duration-300 ${
+                      isActive
+                        ? "border-blue-600 bg-blue-50/30"
+                        : "border-slate-100 bg-slate-50/50 hover:border-slate-200 hover:bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`p-3 rounded-2xl transition-colors ${
+                        isActive ? "bg-blue-600 text-white" : "bg-white text-slate-400 group-hover:text-blue-500 shadow-sm"
+                      }`}>
+                        {tool.icon}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className={`text-sm font-bold ${isActive ? "text-blue-900" : "text-slate-700"}`}>
+                          {tool.label}
+                        </h3>
+                        <p className="text-[11px] text-slate-500 font-medium">
+                          {tool.description}
+                        </p>
+                      </div>
+                      {isActive && <ChevronRight size={16} className="text-blue-400" />}
+                    </div>
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            {/* Active Workspace */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={selectedTool + selectedModule}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+                className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-6 sm:p-10"
+              >
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="h-8 w-1.5 bg-blue-600 rounded-full" />
+                  <div>
+                    <h2 className="text-centertext-2xl font-black text-slate-900 tracking-tight">
+                      {selectedTool === "lesson" ? "Text to Projection" : "Text to Visual"}
+                    </h2>
+
+                  </div>
+                </div>
+
+                {selectedTool === "lesson" ? (
+                  <GenerateProjectionRealtime module={selectedModule} />
+                ) : (
+                  <ProjectionVisualCreator />
+                )}
+              </motion.div>
+            </AnimatePresence>
+
           </div>
-
-          {/* FOOT NOTE */}
-          <p className="mt-8 sm:mt-12 text-[10px] sm:text-xs text-slate-400 text-center max-w-xl mx-auto px-4">
-            Projection Studio is designed for structured academic revision.
-            Always verify against institutional protocols and radiographic standards.
-          </p>
-
         </div>
       </div>
     </div>

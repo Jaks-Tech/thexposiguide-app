@@ -25,6 +25,7 @@ export default function Footer() {
         { name: "Announcements", href: "/announcements" },
         { name: "Timetable", href: "/student-tt" },
         { name: "Game Retreat", href: "/games" },
+        { name: "Attendance", href: "/attendance" },
       ],
     },
     {

@@ -28,6 +28,7 @@ import Logout from "@/components/admin/Logout";
 import ReturnToTop from "@/components/ReturnToTop";
 import AddStudentSection from "@/components/admin/AddStudentSection";
 import { logActivity } from "@/lib/logActivity";
+import CreateSessionPage from "@/app/admin/attendance/page";
 
 // --- Timeplanner Components ---
 import AllocationBoard from "@/components/admin/scheduler/AllocationBoard";
@@ -35,6 +36,7 @@ import AllocationBoard from "@/components/admin/scheduler/AllocationBoard";
 const menuItems = [
   { id: "overview", label: "Overview", icon: "📊" },
   { id: "planner", label: "Academic Timetable", icon: "📅" },
+  { id: "attendance", label: "Attendance", icon: "📍🙋‍♂️" },
   { id: "students", label: "Add Students", icon: "👤" },
   { id: "upload-files", label: "Upload Files (Notes, Past Papers, MD files)", icon: "📂" },
   { id: "links", label: "Add Useful Links", icon: "🌐" },
@@ -514,6 +516,13 @@ export default function AdminDashboard() {
 
               <AllocationBoard />
             </div>
+          )}
+
+          {/* ✅ NEW ATTENDANCE SECTION */}
+          {activeTab === "attendance" && (
+            <section className="animate-in fade-in duration-500">
+              <CreateSessionPage />
+            </section>
           )}
 
           {activeTab === "billing" && (

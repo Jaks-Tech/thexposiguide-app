@@ -1,0 +1,21 @@
+
+> thexposiguide-app@0.1.0 dev
+> next dev --turbo --port 3001
+
+   ▲ Next.js 15.5.14 (Turbopack)
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.1.100:3001
+   - Environments: .env.local
+
+ ✓ Starting...
+Creating turbopack project { dir: 'E:\\The_XPosiGuide\\thexposiguide-app', testMode: true }
+ ✓ Ready in 4.3s
+ ○ Compiling /projections-studio ...
+ POST /api/projections/visuals 400 in 14153ms
+ ✓ Compiled /projections-studio in 21.2s
+ GET /projections-studio 200 in 1148ms
+ POST /api/projections/visuals 400 in 1138ms
+ POST /api/projections/visuals 200 in 19556ms
+ POST /api/projections/visuals 200 in 44326ms
+ GET /projections-studio 200 in 5333ms
+ ✓ Compiled in 3.6s
